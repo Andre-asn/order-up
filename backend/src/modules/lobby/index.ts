@@ -19,24 +19,41 @@ export const lobbyModule = new Elysia({ prefix: '/lobby' })
             message: error instanceof Error ? error.message : 'Unknown error'
             });
     })
-
-  .post(
-    '/create',
-    async ({ body }) => {
-      const result = await lobbyService.createLobby(body);
-      return {
-        success: true,
-        ...result,
-      };
-    },
-    {
-      body: lobbyModel.createLobby.body,
-      response: {
-        200: lobbyModel.createLobbySuccess,
-        400: lobbyModel.errorResponse,
-        502: lobbyModel.errorResponse, 
-        500: lobbyModel.errorResponse,
-        422: lobbyModel.errorResponse,
-      },
-    }
-  );
+    .post(
+        '/create',
+        async ({ body }) => {
+        const result = await lobbyService.createLobby(body);
+        return {
+            success: true,
+            ...result,
+        };
+        },
+        {
+        body: lobbyModel.createLobby.body,
+        response: {
+            200: lobbyModel.createLobbySuccess,
+            400: lobbyModel.errorResponse,
+            502: lobbyModel.errorResponse, 
+            500: lobbyModel.errorResponse,
+            422: lobbyModel.errorResponse,
+        },
+    })
+    .post(
+        '/join',
+        async ({ body }) => {
+        const result = await lobbyService.joinLobby(body);
+        return {
+            success: true,
+            ...result,
+        };
+        },
+        {
+        body: lobbyModel.joinLobby.body,
+        response: {
+            200: lobbyModel.joinLobbySuccess,
+            400: lobbyModel.errorResponse,
+            404: lobbyModel.errorResponse,
+            500: lobbyModel.errorResponse,
+        },
+        }
+    )

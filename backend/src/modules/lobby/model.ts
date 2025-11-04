@@ -66,10 +66,10 @@ export namespace lobbyModel {
         })
         }),
         response: {
-        200: createLobbySuccess,
-        400: errorResponse,
-        422: errorResponse,
-        500: errorResponse
+            200: createLobbySuccess,
+            400: errorResponse,
+            422: errorResponse,
+            500: errorResponse
         },
     } as const;
 

@@ -34,6 +34,35 @@ export class lobbyService {
         return { roomId, playerId, lobby };
     }
 
+    static async joinLobby(
+        data: lobbyModel.joinLobbyBody
+    ): Promise<{
+        playerId: string;
+        lobby: lobbyModel.lobby;
+    }> {
+        const lobby = lobbies.get(data.roomId);
+        if (!lobby) {
+            throw new Error('Lobby not found');
+        }
+
+        if (lobby.players.length >= 8) {
+            throw new Error('Lobby is full');
+        }
+
+        const playerId = generatePlayerId();
+        const newPlayer: lobbyModel.player = {
+            playerId,
+            name: data.name,
+            isReady: false,
+            isHost: false,
+        };
+
+        lobby.players.push(newPlayer);
+        lobbies.set(data.roomId, lobby);
+
+        return { playerId, lobby };
+    }
+
 }
 
 function generateRoomCode(): string {
