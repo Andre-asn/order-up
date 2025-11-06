@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 import { lobbyModel } from './model.js';
 import { lobbyService } from './service.js';
 

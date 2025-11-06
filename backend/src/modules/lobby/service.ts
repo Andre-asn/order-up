@@ -1,7 +1,8 @@
 // src/modules/lobby/service.ts
 import { lobbyModel } from './model';
 
-const lobbies = new Map();
+const lobbies = new Map(); // roomId -> lobby
+const countdownTimers = new Map(); // roomId -> countdownTimer
 
 export class lobbyService {
     static async createLobby(
@@ -61,6 +62,56 @@ export class lobbyService {
         lobbies.set(data.roomId, lobby);
 
         return { playerId, lobby };
+    }
+
+    static removePlayer(roomId: string, playerId: string): lobbyModel.lobby | null {
+        const lobby = lobbies.get(roomId);
+        if (!lobby) {
+            return null;
+        }
+
+        if (playerId === lobby.hostId && lobby.players.length > 0) {
+            lobby.players[0].isHost = true;
+            lobby.hostId = lobby.players[0].playerId;
+        }
+
+        for (const player of lobby.players) {
+            if (player.playerId === playerId) {
+                lobby.players.splice(lobby.players.indexOf(player), 1);
+                break;
+            }
+        }
+
+        if (lobby.players.length === 0) {
+            this.cleanUpLobby(roomId);
+            return null;
+        }
+
+        return lobby;
+    }
+
+    static canStartGame(roomId: string): boolean {
+        const room = lobbies.get(roomId);
+        return (room.players.length >= 6 && room.players.length <= 8)
+    }
+
+    static validateGameStart(lobby: lobbyModel.lobby, player: string): void {
+        if (lobby.hostId !== player) {
+            throw new Error('You are not the host!')
+        }
+        if (!this.canStartGame(lobby.roomId)) {
+            throw new Error('You must have 6-8 players to start!')
+        }
+    }
+
+    static cleanUpLobby(roomId: string): void {
+        const timer = countdownTimers.get(roomId);
+        if (timer) {
+            clearInterval(timer);
+            countdownTimers.delete(roomId);
+        }
+        lobbies.delete(roomId);
+        console.log(`Lobby ${roomId} cleaned up`);
     }
 
 }

@@ -107,12 +107,6 @@ export namespace lobbyModel {
     
     // Websockets below
     export const wsEvents = {
-        playerReady: t.Object({
-            type: t.Literal('player_ready'),
-            roomId: t.String(),
-            playerId: t.String(),
-            isReady: t.Boolean(),
-        }),
         
         startGame: t.Object({
             type: t.Literal('start_game'),
@@ -146,7 +140,6 @@ export namespace lobbyModel {
         }),
     } as const;
 
-    export type PlayerReadyEvent = typeof wsEvents.playerReady.static;
     export type StartGameEvent = typeof wsEvents.startGame.static;
     export type LobbyUpdateEvent = typeof wsEvents.lobbyUpdate.static;
     export type PlayerJoinedEvent = typeof wsEvents.playerJoined.static;
