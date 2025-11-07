@@ -1,0 +1,159 @@
+/* Root container */
+.menu-root {
+  position: relative;
+  min-height: 100vh;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+/* Stage centers content */
+.menu-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* Title */
+.menu-title {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.menu-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.menu-title-icon {
+  color: #000000;
+}
+.menu-title-text {
+  font-family: 'CherryBombOne', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+  color: #000000;
+  font-weight: 800;
+  font-size: clamp(78px, 8vw, 96px);
+  transform: rotate(-2deg);
+  margin: 0;
+}
+
+/* Playfield */
+.menu-playfield {
+  position: relative;
+}
+
+/* Faces circle */
+.menu-faces {
+  position: absolute;
+  width: 640px;
+  height: 740px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.face {
+  position: absolute;
+  width: 89px;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+.face-top { top: 0; left: 50%; transform: translateX(-50%); }
+.face-top-right { top: 32px; right: 32px; transform: rotate(45deg); }
+.face-right { right: 0; top: 50%; transform: translateY(-50%); }
+.face-bottom-right { bottom: 32px; right: 32px; transform: rotate(-45deg); }
+.face-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
+.face-bottom-left { bottom: 32px; left: 32px; transform: rotate(45deg); }
+.face-left { left: 0; top: 50%; transform: translateY(-50%); }
+.face-top-left { top: 32px; left: 32px; transform: rotate(-45deg); }
+
+/* Pot */
+.menu-pot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pot-img {
+  width: clamp(320px, 40vw, 384px);
+  height: clamp(320px, 40vw, 384px);
+}
+
+/* Buttons inside pot */
+.menu-buttons {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+.menu-btn-stack { display: flex; flex-direction: column; gap: 12px; }
+
+.menu-btn {
+  position: relative;
+  border: 4px solid #000;
+  padding: 12px 24px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 18px;
+  font-weight: 800;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 0 0 rgba(0,0,0,0);
+  cursor: pointer;
+}
+.menu-btn:hover { transform: rotate(2deg); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+.menu-btn:active { transform: scale(0.95); }
+
+.btn-light { background: #fff; color: #000; }
+.btn-dark { background: #000; color: #fff; }
+
+.btn-content { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-icon { margin-right: 8px; }
+
+.btn-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: 2px solid #000;
+  transform: rotate(45deg);
+}
+.btn-corner.alt { background: #000; border-color: #fff; }
+.corner-tr { top: -8px; right: -8px; }
+.corner-bl { bottom: -8px; left: -8px; }
+
+/* Corner decorations */
+.corner.deco { position: absolute; }
+.corner.deco.tl { top: 16px; left: 16px; }
+.corner.deco.tr { top: 16px; right: 16px; }
+.corner.deco.bl { bottom: 16px; left: 16px; }
+.corner.deco.br { bottom: 16px; right: 16px; }
+.corner-svg { stroke: #000; stroke-width: 2; fill: none; }
+
+@media (max-width: 640px) {
+  /* Scale the ring to always fit within the viewport, slightly larger */
+  .menu-faces { width: min(86vw, 54vh); height: min(86vw, 54vh); }
+  /* Scale faces with viewport to avoid clipping */
+  .face { width: clamp(56px, 12vw, 90px); height: auto; object-fit: contain; object-position: center; }
+  /* Move soup pot to bottom on small screens */
+  .menu-pot { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; z-index: 1; }
+  /* Reduce pot size on very small screens so content fits */
+  .pot-img { width: clamp(200px, 60vw, 320px); height: clamp(200px, 60vw, 320px); }
+  /* Keep buttons centered on screen on small screens */
+  .menu-buttons { position: fixed; inset: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); margin-top: 0; z-index: 2; }
+  /* Ring surrounds the buttons: fix and center same as buttons */
+  .menu-faces { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 0; }
+  /* Title placed near the top */
+  .menu-stage { justify-content: flex-start; padding-top: 16px; }
+  .menu-title { margin-bottom: 12px; }
+}
+
+
