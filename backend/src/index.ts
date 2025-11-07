@@ -1,8 +1,10 @@
 import { Elysia } from "elysia";
 import { lobbyModule } from "./modules/lobby"; // ← Import your module
+import { cors } from "@elysiajs/cors";
 
 const app = new Elysia()
   .get("/", () => "Hello Elysia")
+  .use(cors())
   .use(lobbyModule) // ← Register the lobby routes
   .listen(3000);
 

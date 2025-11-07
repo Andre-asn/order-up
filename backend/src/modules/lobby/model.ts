@@ -89,21 +89,6 @@ export namespace lobbyModel {
     } as const;
 
     export type joinLobbyBody = typeof joinLobby.body.static;
-
-    export const toggleReady = {
-        body: t.Object({
-            roomId: t.String(),
-            playerId: t.String(),
-        }),
-        response: {
-            200: toggleReadySuccess,
-            400: errorResponse,
-            404: errorResponse,
-            500: errorResponse,
-        },
-    } as const
-
-    export type toggleReadyBody = typeof toggleReady.body.static;
     
     // Websockets below
     export const wsEvents = {
