@@ -45,48 +45,92 @@ function IconUsers({ size = 20, className = '' }: { size?: number; className?: s
 }
 
 export default function MainMenu() {
-  const navigate = useNavigate()
-  const [showCreate, setShowCreate] = useState(false)
-  const [hostName, setHostName] = useState('')
-  const [gamemode, setGamemode] = useState<'classic' | 'hidden' | 'headChef'>('classic')
-  const [error, setError] = useState<string | null>(null)
+    const navigate = useNavigate()
+    const [showCreate, setShowCreate] = useState(false)
+    const [showJoin, setShowJoin] = useState(false)
+    const [hostName, setHostName] = useState('')
+    const [gamemode, setGamemode] = useState<'Classic' | 'Hidden' | 'Head Chef'>('Classic')
+    const [error, setError] = useState<string | null>(null)
+    const [joinError, setJoinError] = useState<string | null>(null)
+    const [joinName, setJoinName] = useState('')
+    const [joinRoom, setJoinRoom] = useState('')
 
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? 'http://localhost:3000'
+    const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? 'http://localhost:3000'
 
-  const submitCreate = async () => {
-    setError(null)
-    const trimmed = hostName.trim()
-    if (trimmed.length < 1 || trimmed.length > 10) {
-      setError('Name must be 1-10 characters')
+    const submitCreate = async () => {
+        setError(null)
+        const trimmed = hostName.trim()
+        if (trimmed.length < 1 || trimmed.length > 10) {
+        setError('Name must be 1-10 characters')
+        return
+        }
+        try {
+        const res = await fetch(`${API_BASE}/lobby/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hostName: trimmed, gamemode }),
+        })
+        if (!res.ok) {
+            const msg = await res.text()
+            throw new Error(msg || `HTTP ${res.status}`)
+        }
+        const data = await res.json()
+        const roomId = data.roomId
+        const playerId = data.playerId
+        console.log('data', data)
+        if (roomId && playerId) {
+            try { localStorage.setItem('playerId', String(playerId)) } catch {}
+            navigate(
+            `/lobby?roomId=${encodeURIComponent(roomId)}&playerId=${encodeURIComponent(playerId)}`,
+            { state: { lobbyData: data } }
+            )
+        } else {
+            setError('Unexpected server response')
+        }
+        } catch (e: any) {
+        setError(e?.message ?? 'Failed to create lobby')
+        }
+    }
+
+  const handleJoinGame = () => {
+    setShowJoin(true)
+  }
+
+  const submitJoin = async () => {
+    setJoinError(null)
+    const name = joinName.trim()
+    const room = joinRoom.trim().toUpperCase()
+    if (name.length < 1 || name.length > 10) {
+      setJoinError('Name must be 1-10 characters')
+      return
+    }
+    if (!room) {
+      setJoinError('Enter room code')
       return
     }
     try {
-      const res = await fetch(`${API_BASE}/lobby/create`, {
+      const res = await fetch(`${API_BASE}/lobby/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hostName: trimmed, gamemode }),
+        body: JSON.stringify({ roomId: room, name }),
       })
       if (!res.ok) {
         const msg = await res.text()
         throw new Error(msg || `HTTP ${res.status}`)
       }
       const data = await res.json()
-      const roomId = data.roomId
+      const roomId = data?.lobby?.roomId ?? room
       const playerId = data.playerId
-      console.log('data', data)
       if (roomId && playerId) {
         try { localStorage.setItem('playerId', String(playerId)) } catch {}
-        navigate(`/lobby?roomId=${encodeURIComponent(roomId)}&playerId=${encodeURIComponent(playerId)}`)
+        navigate(`/lobby?roomId=${encodeURIComponent(roomId)}&playerId=${encodeURIComponent(playerId)}`,
+          { state: { lobbyData: data } })
       } else {
-        setError('Unexpected server response')
+        setJoinError('Unexpected server response')
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to create lobby')
+      setJoinError(e?.message ?? 'Failed to join lobby')
     }
-  }
-
-  const handleJoinGame = () => {
-    console.log('Joining game...')
   }
 
   return (
@@ -157,14 +201,41 @@ export default function MainMenu() {
             />
             <label className="modal-label">Gamemode</label>
             <div className="modal-radio">
-              <label><input type="radio" name="gm" checked={gamemode==='classic'} onChange={() => setGamemode('classic')} /> Classic</label>
-              <label><input type="radio" name="gm" checked={gamemode==='hidden'} onChange={() => setGamemode('hidden')} /> Hidden</label>
-              <label><input type="radio" name="gm" checked={gamemode==='headChef'} onChange={() => setGamemode('headChef')} /> Head Chef</label>
+              <label><input type="radio" name="gm" checked={gamemode==='Classic'} onChange={() => setGamemode('Classic')} /> Classic</label>
+              <label><input type="radio" name="gm" checked={gamemode==='Hidden'} onChange={() => setGamemode('Hidden')} /> Hidden</label>
+              <label><input type="radio" name="gm" checked={gamemode==='Head Chef'} onChange={() => setGamemode('Head Chef')} /> Head Chef</label>
             </div>
             {error && <div className="modal-error">{error}</div>}
             <div className="modal-actions">
               <button className="menu-btn btn-light" onClick={() => setShowCreate(false)}>Cancel</button>
               <button className="menu-btn btn-dark" onClick={submitCreate}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showJoin && (
+        <div className="modal-backdrop" onClick={() => setShowJoin(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Join Game</h2>
+            <label className="modal-label">Your Name (1-10)</label>
+            <input
+              className="modal-input"
+              value={joinName}
+              onChange={(e) => setJoinName(e.target.value)}
+              maxLength={10}
+              placeholder="Chef Name"
+            />
+            <label className="modal-label">Room Code</label>
+            <input
+              className="modal-input"
+              value={joinRoom}
+              onChange={(e) => setJoinRoom(e.target.value.toUpperCase())}
+              placeholder="e.g. 5MJ7J0"
+            />
+            {joinError && <div className="modal-error">{joinError}</div>}
+            <div className="modal-actions">
+              <button className="menu-btn btn-light" onClick={() => setShowJoin(false)}>Cancel</button>
+              <button className="menu-btn btn-dark" onClick={submitJoin}>Join</button>
             </div>
           </div>
         </div>

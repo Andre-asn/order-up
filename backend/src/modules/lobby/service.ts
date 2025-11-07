@@ -2,7 +2,6 @@
 import { lobbyModel } from './model';
 
 const lobbies = new Map(); // roomId -> lobby
-const countdownTimers = new Map(); // roomId -> countdownTimer
 
 export class lobbyService {
     static async createLobby(
@@ -18,7 +17,6 @@ export class lobbyService {
         const hostPlayer: lobbyModel.player = {
             playerId,
             name: data.hostName,
-            isReady: true,
             isHost: true,
         };
         
@@ -54,7 +52,6 @@ export class lobbyService {
         const newPlayer: lobbyModel.player = {
             playerId,
             name: data.name,
-            isReady: false,
             isHost: false,
         };
 
@@ -83,10 +80,18 @@ export class lobbyService {
         }
 
         if (lobby.players.length === 0) {
-            this.cleanUpLobby(roomId);
-            return null;
+            lobbies.delete(roomId);
+            console.log(`Lobby ${roomId} cleaned up and deleted`);
         }
 
+        return lobby;
+    }
+
+    static getLobby(roomId: string): lobbyModel.lobby {
+        const lobby = lobbies.get(roomId);
+        if (!lobby) {
+            throw new Error('Lobby not found');
+        }
         return lobby;
     }
 
@@ -102,16 +107,6 @@ export class lobbyService {
         if (!this.canStartGame(lobby.roomId)) {
             throw new Error('You must have 6-8 players to start!')
         }
-    }
-
-    static cleanUpLobby(roomId: string): void {
-        const timer = countdownTimers.get(roomId);
-        if (timer) {
-            clearInterval(timer);
-            countdownTimers.delete(roomId);
-        }
-        lobbies.delete(roomId);
-        console.log(`Lobby ${roomId} cleaned up`);
     }
 
 }

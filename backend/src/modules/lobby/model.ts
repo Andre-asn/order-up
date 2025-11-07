@@ -5,7 +5,6 @@ export namespace lobbyModel {
     export const player = t.Object({
         playerId: t.String(),
         name: t.String({ minLength: 1, maxLength: 10 }),
-        isReady: t.Boolean(),
         isHost: t.Boolean(),
     })
 
@@ -15,7 +14,7 @@ export namespace lobbyModel {
         roomId: t.String(),
         hostId: t.String(),
         players: t.Array(player, { minItems: 1, maxItems: 8 }),
-        gamemode: t.Union([t.Literal('classic'), t.Literal('hidden'), t.Literal('headChef')]),
+        gamemode: t.Union([t.Literal('Classic'), t.Literal('Hidden'), t.Literal('Head Chef')]),
         roomStatus: t.Union([t.Literal('waiting'),t.Literal('playing'),t.Literal('finished')]),
     })
 
@@ -58,11 +57,11 @@ export namespace lobbyModel {
             error: 'Host name must be 1-10 characters long'
         }),
         gamemode: t.Union([
-            t.Literal('classic'),
-            t.Literal('hidden'),
-            t.Literal('headChef')
+            t.Literal('Classic'),
+            t.Literal('Hidden'),
+            t.Literal('Head Chef')
         ], {
-            error: 'Gamemode must be one of: classic, hidden, headChef'
+            error: 'Gamemode must be one of: Classic, Hidden, Head Chef'
         })
         }),
         response: {

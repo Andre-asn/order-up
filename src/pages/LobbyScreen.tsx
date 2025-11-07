@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import '../styles/lobby.css'
 import a1 from '../assets/Untitled-1.gif'
@@ -11,106 +11,257 @@ import a6 from '../assets/Untitled-6.gif'
 import a7 from '../assets/Untitled-7.gif'
 import a8 from '../assets/Untitled-8.gif'
 
-export default function LobbyScreen() {
-    const [params] = useSearchParams()
-    const [roomCode] = useState<string>(params.get('roomId') ?? 'ABC123')
-
-    // Avatar images imported from src/assets
-    const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
-
-	const [players] = useState<Array<{
-		id: string
-		name: string
-		isHost: boolean
-		avatarIndex?: number
-		isEmpty?: boolean
-	}>>([
-		{ id: '1', name: 'Chef Mario', isHost: true, avatarIndex: 0 },
-		{ id: '2', name: 'Sous Sally', isHost: false, avatarIndex: 4 },
-		{ id: '3', name: 'Baker Bob', isHost: false, avatarIndex: 7 },
-		{ id: '4', name: 'Waiting for chef...', isHost: false, isEmpty: true },
-		{ id: '5', name: 'Waiting for chef...', isHost: false, isEmpty: true },
-		{ id: '6', name: 'Waiting for chef...', isHost: false, isEmpty: true },
-		{ id: '7', name: 'Waiting for chef...', isHost: false, isEmpty: true },
-		{ id: '8', name: 'Waiting for chef...', isHost: false, isEmpty: true },
-	])
-
-	const totalPlayers = players.filter((p) => !p.isEmpty).length
-
-	return (
-		<div className="lobby-root">
-			{/* Title */}
-			<div className="lobby-title-wrap">
-				<h1 className="lobby-title">Kitchen</h1>
-				<div className="room-code">
-					{roomCode}
-					<span className="rc-dot tl" />
-					<span className="rc-dot tr" />
-					<span className="rc-dot bl" />
-					<span className="rc-dot br" />
-				</div>
-			</div>
-
-			{/* Players Grid */}
-			<div className="players-grid">
-				{players.map((player, index) => {
-					const cardClasses = [
-						'player-card',
-						index % 2 === 0 ? 'rot-neg' : 'rot-pos',
-						player.isEmpty ? 'empty' : '',
-					]
-						.filter(Boolean)
-						.join(' ')
-
-					return (
-						<div key={player.id} className={cardClasses}>
-							<div className={"avatar" + (player.isEmpty ? ' empty' : '')}>
-								{player.isEmpty ? (
-									<div className="avatar-placeholder">👨‍🍳</div>
-								) : (
-									<img
-										src={chefAvatars[player.avatarIndex ?? 0]}
-										alt={`Chef ${player.name}`}
-										className="avatar-img"
-									/>
-								)}
-							</div>
-							<div className={"player-name" + (player.isEmpty ? ' empty' : '')}>{player.name}</div>
-							{player.isHost && !player.isEmpty && <div className="host-badge">HOST</div>}
-						</div>
-					)
-				})}
-			</div>
-
-			{/* Status Bar */}
-			<div className="status-bar">
-				{totalPlayers}/8 chefs in kitchen • Need {Math.max(0, 6 - totalPlayers)} more to start!
-			</div>
-
-			{/* Actions */}
-			<div className="actions">
-				<button
-					className="start-btn"
-					disabled={totalPlayers < 6}
-					onMouseDown={(e) => {
-						if (totalPlayers >= 6) {
-							e.currentTarget.style.transform = 'translate(3px, 3px) rotate(1deg)'
-							e.currentTarget.style.boxShadow = '3px 3px 0px black'
-						}
-					}}
-					onMouseUp={(e) => {
-						if (totalPlayers >= 6) {
-							e.currentTarget.style.transform = 'rotate(1deg)'
-							e.currentTarget.style.boxShadow = '6px 6px 0px black'
-						}
-					}}
-				>
-					🔥 START COOKING! 🔥
-				</button>
-				<button className="leave-btn">Leave Kitchen</button>
-			</div>
-		</div>
-	)
+type ApiPlayer = { 
+    playerId: string
+    name: string
+    isHost: boolean
 }
 
+type ApiLobby = { 
+    roomId: string
+    hostId: string
+    players: ApiPlayer[]
+    gamemode: 'classic' | 'hidden' | 'Head Chef'
+    roomStatus: 'waiting' | 'playing' | 'finished'
+    createdAt: number
+}
 
+export default function LobbyScreen() {
+    const location = useLocation() as { state?: any }
+    const [params] = useSearchParams()
+    const navigate = useNavigate()
+    
+    const initial = location.state?.lobbyData
+    const [roomCode] = useState<string>(initial?.roomId ?? params.get('roomId') ?? '')
+    const playerIdParam = params.get('playerId') ?? ''
+    const currentPlayerId = playerIdParam || (typeof localStorage !== 'undefined' ? (localStorage.getItem('playerId') ?? '') : '')
+
+    // ✅ State for lobby (updates via WebSocket)
+    const [lobby, setLobby] = useState<ApiLobby | null>(initial?.lobby ?? null)
+    const [ws, setWs] = useState<WebSocket | null>(null)
+    const [error, setError] = useState<string>('')
+    
+    const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
+
+    // ✅ Connect WebSocket on mount
+    useEffect(() => {
+        if (!roomCode || !currentPlayerId) {
+            setError('Missing room code or player ID')
+            return
+        }
+
+        const wsUrl = `ws://localhost:3000/lobby/${roomCode}?playerId=${currentPlayerId}`
+        const websocket = new WebSocket(wsUrl)
+
+        websocket.onopen = () => {
+            console.log('WebSocket connected')
+            setError('')
+        }
+
+        websocket.onmessage = (event) => {
+            const message = JSON.parse(event.data)
+            
+            switch (message.type) {
+                case 'lobby_update':
+                    console.log('Lobby updated:', message.lobby)
+                    setLobby(message.lobby)
+                    break
+                    
+                case 'game_starting':
+                    console.log('Game starting!')
+                    navigate(`/game/${roomCode}`)
+                    break
+                    
+                case 'error':
+                    console.error('Server error:', message.message)
+                    setError(message.message)
+                    break
+            }
+        }
+
+        websocket.onerror = (error) => {
+            console.error('WebSocket error:', error)
+            setError('Connection error')
+        }
+
+        websocket.onclose = () => {
+            console.log('WebSocket disconnected')
+        }
+
+        setWs(websocket)
+
+        // ✅ Cleanup on unmount
+        return () => {
+            websocket.close()
+        }
+    }, [roomCode, currentPlayerId, navigate])
+
+    // Avatars: deterministically assign by server-reported order, ensuring
+    // no duplicates and consistency across devices (index-based).
+
+    const derivedHostId = useMemo(() => {
+        const id = lobby?.hostId
+        const ids = new Set((lobby?.players ?? []).map(p => p.playerId))
+        if (id && ids.has(id)) return id
+        return lobby?.players?.[0]?.playerId
+    }, [lobby])
+
+    const players = useMemo(() => {
+        const list = lobby?.players ?? []
+        const real = list.map((p, idx) => ({
+            id: p.playerId,
+            name: p.name,
+            isHost: p.playerId === derivedHostId,
+            avatarIndex: idx % 8,
+            isEmpty: false as const,
+        }))
+        
+        const remaining = Math.max(0, 8 - real.length)
+        const empties = Array.from({ length: remaining }).map((_, i) => ({
+            id: `empty-${i}`,
+            name: 'Waiting for chef...',
+            isHost: false,
+            isEmpty: true as const,
+        }))
+        
+        return [...real, ...empties]
+    }, [lobby, derivedHostId])
+
+    const totalPlayers = players.filter((p) => !p.isEmpty).length
+    const isHost = lobby?.hostId === currentPlayerId
+    const canStart = totalPlayers >= 6 && totalPlayers <= 8 && isHost
+
+    // ✅ Handle start game
+    const handleStartGame = () => {
+        if (!ws || !canStart) return
+        
+        ws.send(JSON.stringify({
+            type: 'start_game',
+            roomId: roomCode,
+            playerId: currentPlayerId,
+        }))
+    }
+
+    // ✅ Handle leave lobby
+    const handleLeave = () => {
+        if (ws) {
+            ws.send(JSON.stringify({
+                type: 'player_left',
+                roomId: roomCode,
+                playerId: currentPlayerId,
+            }))
+        }
+        navigate('/')
+    }
+
+    return (
+        <div className="lobby-root">
+            {/* Error Message */}
+            {error && (
+                <div style={{ 
+                    position: 'fixed', 
+                    top: '20px', 
+                    left: '50%', 
+                    transform: 'translateX(-50%)',
+                    background: '#ff4444',
+                    color: 'white',
+                    padding: '10px 20px',
+                    borderRadius: '5px',
+                    zIndex: 1000
+                }}>
+                    {error}
+                </div>
+            )}
+
+            {/* Title */}
+            <div className="lobby-title-wrap">
+                <h1 className="lobby-title">Kitchen</h1>
+                <div className="room-code">
+                    {roomCode}
+                    <span className="rc-dot tl" />
+                    <span className="rc-dot tr" />
+                    <span className="rc-dot bl" />
+                    <span className="rc-dot br" />
+                </div>
+            </div>
+
+            {/* Corner: Gamemode */}
+            {lobby?.gamemode && (
+                <div className="lobby-corner right">Mode: {lobby.gamemode}</div>
+            )}
+
+            {/* Players Grid */}
+            <div className="players-grid">
+                {players.map((player, index) => {
+                    const isYou = !player.isEmpty && player.id === currentPlayerId
+                    const cardClasses = [
+                        'player-card',
+                        index % 2 === 0 ? 'rot-neg' : 'rot-pos',
+                        player.isEmpty ? 'empty' : '',
+                        isYou ? 'you' : '',
+                    ]
+                        .filter(Boolean)
+                        .join(' ')
+
+                    return (
+                        <div key={player.id} className={cardClasses}>
+                            <div className={"avatar" + (player.isEmpty ? ' empty' : '')}>
+                                {player.isEmpty ? (
+                                    <div className="avatar-placeholder">👨‍🍳</div>
+                                ) : (
+                                    <img
+                                        src={chefAvatars[player.avatarIndex ?? 0]}
+                                        alt={`Chef ${player.name}`}
+                                        className="avatar-img"
+                                    />
+                                )}
+                            </div>
+                            <div className={"player-name" + (player.isEmpty ? ' empty' : '')}>
+                                {player.name}
+                            </div>
+                            {player.isHost && !player.isEmpty && (
+                                <div className="host-badge">HOST</div>
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
+
+            {/* Status Bar */}
+            <div className="status-bar">
+                {totalPlayers}/8 chefs in kitchen • 
+                {totalPlayers < 6 
+                    ? ` Need ${6 - totalPlayers} more to start!`
+                    : ' Ready to cook!'
+                }
+            </div>
+
+            {/* Actions */}
+            <div className="actions">
+                <button
+                    className="start-btn"
+                    disabled={!canStart}
+                    onClick={handleStartGame}
+                    onMouseDown={(e) => {
+                        if (canStart) {
+                            e.currentTarget.style.transform = 'translate(3px, 3px) rotate(1deg)'
+                            e.currentTarget.style.boxShadow = '3px 3px 0px black'
+                        }
+                    }}
+                    onMouseUp={(e) => {
+                        if (canStart) {
+                            e.currentTarget.style.transform = 'rotate(1deg)'
+                            e.currentTarget.style.boxShadow = '6px 6px 0px black'
+                        }
+                    }}
+                >
+                    🔥 START COOKING! 🔥
+                    {!isHost && totalPlayers >= 6 && ' (Host Only)'}
+                </button>
+                <button className="leave-btn" onClick={handleLeave}>
+                    Leave Kitchen
+                </button>
+            </div>
+        </div>
+    )
+}
