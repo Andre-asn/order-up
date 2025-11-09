@@ -17,7 +17,6 @@ export namespace lobbyModel {
         gamemode: t.Union([t.Literal('Classic'), t.Literal('Hidden'), t.Literal('Head Chef')]),
         roomStatus: t.Union([t.Literal('waiting'),t.Literal('playing'),t.Literal('finished')]),
     })
-
     export type lobby = typeof lobby.static;
 
     export const errorResponse = t.Object({

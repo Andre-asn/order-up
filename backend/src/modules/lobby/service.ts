@@ -80,8 +80,7 @@ export class lobbyService {
         }
 
         if (lobby.players.length === 0) {
-            lobbies.delete(roomId);
-            console.log(`Lobby ${roomId} cleaned up and deleted`);
+            this.deleteLobby(roomId);
         }
 
         return lobby;
@@ -93,6 +92,11 @@ export class lobbyService {
             throw new Error('Lobby not found');
         }
         return lobby;
+    }
+
+    static deleteLobby(roomId: string): void {
+        lobbies.delete(roomId);
+        console.log(`Lobby ${roomId} deleted`);
     }
 
     static canStartGame(roomId: string): boolean {
@@ -120,5 +124,5 @@ function generateRoomCode(): string {
 }
 
 function generatePlayerId(): string {
-    return `player-${crypto.randomUUID()}`;
+    return crypto.randomUUID();
 }

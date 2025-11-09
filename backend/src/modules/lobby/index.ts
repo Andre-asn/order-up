@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia';
 import { lobbyModel } from './model.js';
 import { lobbyService } from './service.js';
 
-const roomConnections = new Map<string, Map<string, any>>();
+const roomConnections = new Map<string, Map<string, any>>(); //room id -> player ids
 
 export const lobbyModule = new Elysia({ prefix: '/lobby' })
     .onError(({ error, code, status }) => {
@@ -139,16 +139,17 @@ export const lobbyModule = new Elysia({ prefix: '/lobby' })
                         
                         // Start game immediately (no countdown)
                         lobby.roomStatus = 'playing';
-                        
-                        // TODO: Transition to game
-                        // const gameRoom = GameService.startGame(lobby);
-                        
-                        // Broadcast game starting
-                        ws.publish(`lobby:${roomId}`, JSON.stringify({
+                        const msg = JSON.stringify({
                             type: 'game_starting',
                             roomId,
-                        }));
-                        
+                        });
+                        // TODO: Transition to game
+                        // const gameRoom = GameService.startGame(lobby);
+
+                        // Send broadcast to sender and all subscribers
+                        ws.send(msg);
+                        ws.publish(`lobby:${roomId}`, msg);
+
                         console.log(`Game starting in lobby ${roomId}`);
                         break;
                     }
@@ -156,7 +157,7 @@ export const lobbyModule = new Elysia({ prefix: '/lobby' })
             } catch (error) {
                 ws.send(JSON.stringify({
                     type: 'error',
-                    message: error instanceof Error ? error.message : 'Unknown error',
+                    message: error instanceof Error ? error.message : 'An unexpected error occurred',
                 }));
             }
         },
@@ -194,8 +195,6 @@ export const lobbyModule = new Elysia({ prefix: '/lobby' })
                     }));
                     
                     console.log(`Player ${playerId} left lobby ${roomId}`);
-                } else {
-                    console.log(`Lobby ${roomId} deleted (no players left)`);
                 }
             } catch (error) {
                 console.error('Error handling disconnect:', error);

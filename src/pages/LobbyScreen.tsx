@@ -21,7 +21,7 @@ type ApiLobby = {
     roomId: string
     hostId: string
     players: ApiPlayer[]
-    gamemode: 'classic' | 'hidden' | 'Head Chef'
+    gamemode: 'Classic' | 'Hidden' | 'Head Chef'
     roomStatus: 'waiting' | 'playing' | 'finished'
     createdAt: number
 }
@@ -36,14 +36,14 @@ export default function LobbyScreen() {
     const playerIdParam = params.get('playerId') ?? ''
     const currentPlayerId = playerIdParam || (typeof localStorage !== 'undefined' ? (localStorage.getItem('playerId') ?? '') : '')
 
-    // ✅ State for lobby (updates via WebSocket)
+    // State for lobby (updates via WebSocket)
     const [lobby, setLobby] = useState<ApiLobby | null>(initial?.lobby ?? null)
     const [ws, setWs] = useState<WebSocket | null>(null)
     const [error, setError] = useState<string>('')
     
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
-    // ✅ Connect WebSocket on mount
+    // Connect WebSocket on mount
     useEffect(() => {
         if (!roomCode || !currentPlayerId) {
             setError('Missing room code or player ID')
@@ -59,12 +59,12 @@ export default function LobbyScreen() {
         }
 
         websocket.onmessage = (event) => {
-            const message = JSON.parse(event.data)
+            const payload = JSON.parse(event.data)
             
-            switch (message.type) {
+            switch (payload.type) {
                 case 'lobby_update':
-                    console.log('Lobby updated:', message.lobby)
-                    setLobby(message.lobby)
+                    console.log('Lobby updated:', payload.lobby)
+                    setLobby(payload.lobby)
                     break
                     
                 case 'game_starting':
@@ -73,8 +73,8 @@ export default function LobbyScreen() {
                     break
                     
                 case 'error':
-                    console.error('Server error:', message.message)
-                    setError(message.message)
+                    console.error('Server error:', payload.message)
+                    setError(payload.message)
                     break
             }
         }
@@ -90,7 +90,7 @@ export default function LobbyScreen() {
 
         setWs(websocket)
 
-        // ✅ Cleanup on unmount
+        // Cleanup on unmount
         return () => {
             websocket.close()
         }
@@ -131,7 +131,6 @@ export default function LobbyScreen() {
     const isHost = lobby?.hostId === currentPlayerId
     const canStart = totalPlayers >= 6 && totalPlayers <= 8 && isHost
 
-    // ✅ Handle start game
     const handleStartGame = () => {
         if (!ws || !canStart) return
         
@@ -142,7 +141,6 @@ export default function LobbyScreen() {
         }))
     }
 
-    // ✅ Handle leave lobby
     const handleLeave = () => {
         if (ws) {
             ws.send(JSON.stringify({
@@ -156,20 +154,16 @@ export default function LobbyScreen() {
 
     return (
         <div className="lobby-root">
-            {/* Error Message */}
             {error && (
-                <div style={{ 
-                    position: 'fixed', 
-                    top: '20px', 
-                    left: '50%', 
-                    transform: 'translateX(-50%)',
-                    background: '#ff4444',
-                    color: 'white',
-                    padding: '10px 20px',
-                    borderRadius: '5px',
-                    zIndex: 1000
-                }}>
-                    {error}
+                <div className="modal-backdrop">
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="modal-title">An error has occurred</h2>
+                        <div className="modal-actions">
+                            <button className="lobby-modal-btn" onClick={() => navigate('/')}>
+                                Return to Menu
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
