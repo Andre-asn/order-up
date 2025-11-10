@@ -49,7 +49,7 @@ export default function MainMenu() {
     const [showCreate, setShowCreate] = useState(false)
     const [showJoin, setShowJoin] = useState(false)
     const [hostName, setHostName] = useState('')
-    const [gamemode, setGamemode] = useState<'Classic' | 'Hidden' | 'Head Chef'>('Classic')
+    const [gamemode, setGamemode] = useState<'classic' | 'hidden' | 'headChef'>('classic')
     const [error, setError] = useState<string | null>(null)
     const [joinError, setJoinError] = useState<string | null>(null)
     const [joinName, setJoinName] = useState('')
@@ -88,50 +88,50 @@ export default function MainMenu() {
             setError('Unexpected server response')
         }
         } catch (e: any) {
-        setError(e?.message ?? 'Failed to create lobby')
+            setError(e?.message ?? 'Failed to create lobby')
         }
     }
 
-  const handleJoinGame = () => {
-    setShowJoin(true)
-  }
+    const handleJoinGame = () => {
+        setShowJoin(true)
+    }
 
-  const submitJoin = async () => {
-    setJoinError(null)
-    const name = joinName.trim()
-    const room = joinRoom.trim().toUpperCase()
-    if (name.length < 1 || name.length > 10) {
-      setJoinError('Name must be 1-10 characters')
-      return
+    const submitJoin = async () => {
+        setJoinError(null)
+        const name = joinName.trim()
+        const room = joinRoom.trim().toUpperCase()
+        if (name.length < 1 || name.length > 10) {
+        setJoinError('Name must be 1-10 characters')
+        return
+        }
+        if (!room) {
+        setJoinError('Enter room code')
+        return
+        }
+        try {
+        const res = await fetch(`${API_BASE}/lobby/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomId: room, name }),
+        })
+        if (!res.ok) {
+            const msg = await res.text()
+            throw new Error(msg || `HTTP ${res.status}`)
+        }
+        const data = await res.json()
+        const roomId = data?.lobby?.roomId ?? room
+        const playerId = data.playerId
+        if (roomId && playerId) {
+            try { localStorage.setItem('playerId', String(playerId)) } catch {}
+            navigate(`/lobby?roomId=${encodeURIComponent(roomId)}&playerId=${encodeURIComponent(playerId)}`,
+            { state: { lobbyData: data } })
+        } else {
+            setJoinError('Unexpected server response')
+        }
+        } catch (e: any) {
+        setJoinError(e?.message ?? 'Failed to join lobby')
+        }
     }
-    if (!room) {
-      setJoinError('Enter room code')
-      return
-    }
-    try {
-      const res = await fetch(`${API_BASE}/lobby/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomId: room, name }),
-      })
-      if (!res.ok) {
-        const msg = await res.text()
-        throw new Error(msg || `HTTP ${res.status}`)
-      }
-      const data = await res.json()
-      const roomId = data?.lobby?.roomId ?? room
-      const playerId = data.playerId
-      if (roomId && playerId) {
-        try { localStorage.setItem('playerId', String(playerId)) } catch {}
-        navigate(`/lobby?roomId=${encodeURIComponent(roomId)}&playerId=${encodeURIComponent(playerId)}`,
-          { state: { lobbyData: data } })
-      } else {
-        setJoinError('Unexpected server response')
-      }
-    } catch (e: any) {
-      setJoinError(e?.message ?? 'Failed to join lobby')
-    }
-  }
 
   return (
     <div className="menu-root">
@@ -201,9 +201,9 @@ export default function MainMenu() {
             />
             <label className="modal-label">Gamemode</label>
             <div className="modal-radio">
-              <label><input type="radio" name="gm" checked={gamemode==='Classic'} onChange={() => setGamemode('Classic')} /> Classic</label>
-              <label><input type="radio" name="gm" checked={gamemode==='Hidden'} onChange={() => setGamemode('Hidden')} /> Hidden</label>
-              <label><input type="radio" name="gm" checked={gamemode==='Head Chef'} onChange={() => setGamemode('Head Chef')} /> Head Chef</label>
+              <label><input type="radio" name="gm" checked={gamemode==='classic'} onChange={() => setGamemode('classic')} /> Classic</label>
+              <label><input type="radio" name="gm" checked={gamemode==='hidden'} onChange={() => setGamemode('hidden')} /> Hidden</label>
+              <label><input type="radio" name="gm" checked={gamemode==='headChef'} onChange={() => setGamemode('headChef')} /> Head Chef</label>
             </div>
             {error && <div className="modal-error">{error}</div>}
             <div className="modal-actions">

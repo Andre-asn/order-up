@@ -24,7 +24,7 @@ export const lobbyModule = new Elysia({ prefix: '/lobby' })
     .post(
         '/create',
         async ({ body }) => {
-        const result = await lobbyService.createLobby(body);
+            const result = await lobbyService.createLobby(body);
         return {
             success: true,
             ...result,

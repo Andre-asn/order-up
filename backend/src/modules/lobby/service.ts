@@ -4,9 +4,7 @@ import { lobbyModel } from './model';
 const lobbies = new Map(); // roomId -> lobby
 
 export class lobbyService {
-    static async createLobby(
-        data: lobbyModel.createLobbyBody
-    ): Promise<{
+    static async createLobby(data: lobbyModel.createLobbyBody): Promise<{
         roomId: string;
         playerId: string;
         lobby: lobbyModel.lobby;
@@ -29,7 +27,6 @@ export class lobbyService {
         };
         
         lobbies.set(roomId, lobby);
-        
         return { roomId, playerId, lobby };
     }
 
@@ -112,7 +109,6 @@ export class lobbyService {
             throw new Error('You must have 6-8 players to start!')
         }
     }
-
 }
 
 function generateRoomCode(): string {

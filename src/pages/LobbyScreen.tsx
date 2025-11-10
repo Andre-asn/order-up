@@ -21,7 +21,7 @@ type ApiLobby = {
     roomId: string
     hostId: string
     players: ApiPlayer[]
-    gamemode: 'Classic' | 'Hidden' | 'Head Chef'
+    gamemode: 'classic' | 'hidden' | 'headChef'
     roomStatus: 'waiting' | 'playing' | 'finished'
     createdAt: number
 }
@@ -181,7 +181,7 @@ export default function LobbyScreen() {
 
             {/* Corner: Gamemode */}
             {lobby?.gamemode && (
-                <div className="lobby-corner right">Mode: {lobby.gamemode}</div>
+                <div className="lobby-corner right">Mode: {lobby.gamemode.toUpperCase()}</div>
             )}
 
             {/* Players Grid */}

@@ -14,7 +14,7 @@ export namespace lobbyModel {
         roomId: t.String(),
         hostId: t.String(),
         players: t.Array(player, { minItems: 1, maxItems: 8 }),
-        gamemode: t.Union([t.Literal('Classic'), t.Literal('Hidden'), t.Literal('Head Chef')]),
+        gamemode: t.Union([t.Literal('classic'), t.Literal('hidden'), t.Literal('headChef')]),
         roomStatus: t.Union([t.Literal('waiting'),t.Literal('playing'),t.Literal('finished')]),
     })
     export type lobby = typeof lobby.static;
@@ -56,11 +56,11 @@ export namespace lobbyModel {
             error: 'Host name must be 1-10 characters long'
         }),
         gamemode: t.Union([
-            t.Literal('Classic'),
-            t.Literal('Hidden'),
-            t.Literal('Head Chef')
+            t.Literal('classic'),
+            t.Literal('hidden'),
+            t.Literal('headChef')
         ], {
-            error: 'Gamemode must be one of: Classic, Hidden, Head Chef'
+            error: 'Gamemode must be one of: classic, hidden, headChef'
         })
         }),
         response: {
