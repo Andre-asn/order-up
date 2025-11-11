@@ -21,7 +21,6 @@ export namespace gameModel {
         t.Literal('proposing'),
         t.Literal('voting'),
         t.Literal('cooking'),
-        t.Literal('revealing'),
         t.Literal('redemption'),
         t.Literal('game_over'),
     ])

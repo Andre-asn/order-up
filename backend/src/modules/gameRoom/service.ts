@@ -5,6 +5,69 @@ import { getGameConfig, GameConfig } from './rules';
 const gameRooms = new Map(); // roomId -> gameRoom
 const phaseTimers = new Map(); // roomId -> timer
 
+export class transitionService {
+    static proposingPhase(room: gameModel.gameRoom): void {
+        room.currentPhase = 'proposing';
+        room.phaseDeadline = Date.now() + 90000; // 90s
+        gameRoomService.startPhaseTimer(room);
+        
+        console.log(`Proposing phase - Proponent: ${gameRoomService.getCurrentProponent(room)}`);
+    }
+    
+    static votingPhase(room: gameModel.gameRoom): void {
+        room.currentPhase = 'voting';
+        room.phaseDeadline = Date.now() + 20000; // 20s
+        gameRoomService.startPhaseTimer(room);
+        
+        console.log(`Voting phase - 20 seconds to vote`);
+    }
+    
+    static cookingPhase(room: gameModel.gameRoom): void {
+        room.currentPhase = 'cooking';
+        room.phaseDeadline = null; // No timer in this phase, waits for selections
+        room.ingredientSelections = [];
+        gameRoomService.clearPhaseTimer(room.roomId);
+        
+        console.log(`Cooking phase - Waiting for chefs to throw ingredients...`);
+    }
+    
+    static nextRound(room: gameModel.gameRoom): void {
+        // Check win condition first
+        const winner = gameRoomService.checkWinCondition(room);
+        if (winner) {
+            this.gameOver(room, winner);
+            return;
+        }
+        
+        // Move to next round
+        room.round++;
+        room.rejectionCount = 0;
+        
+        // Move to next proponent (for new round)
+        gameRoomService.moveToNextProponent(room);
+        
+        // Start proposing phase
+        this.proposingPhase(room);
+        
+        console.log(`Moving to Round ${room.round}`);
+    }
+
+    static gameOver(room: gameModel.gameRoom, winner: 'chefs' | 'impastas'): void {
+        room.currentPhase = 'game_over';
+        room.phaseDeadline = null;
+        gameRoomService.clearPhaseTimer(room.roomId);
+        
+        console.log(`Game Over - Winner: ${winner}`);
+        
+        // Check for redemption (Head Chef mode)
+        if (room.rules.hasHeadChef && room.rules.allowRedemption && winner === 'chefs') {
+            room.currentPhase = 'redemption';
+            room.phaseDeadline = Date.now() + 30000; // 30s for impastas to choose
+            gameRoomService.startPhaseTimer(room);
+            console.log(`Redemption phase - Impastas can kill the Head Chef`);
+        }
+    }
+}
 
 export class gameRoomService {
     static async startGame(lobby: lobbyModel.lobby): Promise<gameModel.gameRoom> {
@@ -114,77 +177,6 @@ export class gameRoomService {
             (room.currentProponentIndex + 1) % room.proponentOrder.length;
     }
 
-    private static transitionToProposing(room: gameModel.gameRoom): void {
-        room.currentPhase = 'proposing';
-        room.phaseDeadline = Date.now() + 90000; // 90s
-        this.startPhaseTimer(room);
-        
-        console.log(`Proposing phase - Proponent: ${this.getCurrentProponent(room)}`);
-    }
-    
-    private static transitionToVoting(room: gameModel.gameRoom): void {
-        room.currentPhase = 'voting';
-        room.phaseDeadline = Date.now() + 20000; // 20s
-        this.startPhaseTimer(room);
-        
-        console.log(`Voting phase - 20 seconds to vote`);
-    }
-    
-    private static transitionToCooking(room: gameModel.gameRoom): void {
-        room.currentPhase = 'cooking';
-        room.phaseDeadline = null; // No timer in this phase, waits for selections
-        room.ingredientSelections = [];
-        this.startPhaseTimer(room);
-        
-        console.log(`Cooking phase - Waiting for chefs to throw ingredients...`);
-    }
-    
-    private static transitionToRevealing(room: gameModel.gameRoom): void {
-        room.currentPhase = 'revealing';
-        room.phaseDeadline = null; // No timer
-        this.clearPhaseTimer(room.roomId);
-        
-        const result = room.roundSuccessful[room.round - 1];
-        console.log(`Revealing phase - Round ${room.round} result: ${result ? (result[0] ? 'Perfetto!' : 'Disaster!') : 'Unknown'}`);
-    }
-    
-    private static transitionToNextRound(room: gameModel.gameRoom): void {
-        // Check win condition first
-        const winner = this.checkWinCondition(room);
-        if (winner) {
-            this.transitionToGameOver(room, winner);
-            return;
-        }
-        
-        // Move to next round
-        room.round++;
-        room.rejectionCount = 0;
-        
-        // Move to next proponent (for new round)
-        this.moveToNextProponent(room);
-        
-        // Start proposing phase
-        this.transitionToProposing(room);
-        
-        console.log(`Moving to Round ${room.round}`);
-    }
-
-    private static transitionToGameOver(room: gameModel.gameRoom, winner: 'chefs' | 'impastas'): void {
-        room.currentPhase = 'game_over';
-        room.phaseDeadline = null;
-        this.clearPhaseTimer(room.roomId);
-        
-        console.log(`Game Over - Winner: ${winner}`);
-        
-        // Check for redemption (Head Chef mode)
-        if (room.rules.hasHeadChef && room.rules.allowRedemption && winner === 'chefs') {
-            room.currentPhase = 'redemption';
-            room.phaseDeadline = Date.now() + 30000; // 30s for impastas to choose
-            this.startPhaseTimer(room);
-            console.log(`Redemption phase - Impastas can kill the Head Chef`);
-        }
-    }
-
     static proposeChefs(
         roomId: string,
         playerId: string,
@@ -214,7 +206,7 @@ export class gameRoomService {
         };
         
         // Transition to voting
-        this.transitionToVoting(room);
+        transitionService.votingPhase(room);
         
         return room;
     }
@@ -230,22 +222,11 @@ export class gameRoomService {
             throw new Error('Not your turn to skip');
         }
         
-        // Increment rejection count
-        room.rejectionCount++;
-        
-        // Check if 5 rejections (auto-fail)
-        if (room.rejectionCount >= 5) {
-            console.log(`❌ 5 rejections - Round ${room.round} auto-fails`);
-            room.roundSuccessful[room.round - 1] = [false, 0];
-            this.transitionToRevealing(room);
-            return room;
-        }
-        
         // Move to next proponent
         this.moveToNextProponent(room);
         
         // Restart proposing phase
-        this.transitionToProposing(room);
+        transitionService.proposingPhase(room);
         
         return room;
     }
@@ -307,18 +288,16 @@ export class gameRoomService {
         
         if (passed) {
             // Proposal accepted → go to cooking
-            this.transitionToCooking(room);
+            transitionService.cookingPhase(room);
         } else {
             // Proposal rejected → next proponent
             room.rejectionCount++;
             
             if (room.rejectionCount >= 5) {
-                console.log(`5 rejections - Round ${room.round} auto-fails`);
-                room.roundSuccessful[room.round - 1] = [false, 0];
-                this.transitionToRevealing(room);
+                transitionService.gameOver(room, 'impastas');
             } else {
                 this.moveToNextProponent(room);
-                this.transitionToProposing(room);
+                transitionService.proposingPhase(room);
             }
         }
     }
@@ -384,25 +363,26 @@ export class gameRoomService {
         console.log(`Round ${room.round} result: ${rottenCount} rotten, threshold ${threshold} - ${success ? 'SUCCESS' : 'FAILURE'}`);
         
         // Transition to revealing
-        this.transitionToRevealing(room);
+        if (room.round >= 5) {
+            const winner = this.checkWinCondition(room);
+            transitionService.gameOver(room, winner || 'chefs');
+        } else {
+            transitionService.nextRound(room);
+        }
     }
     
     // ===== Round Advancement =====
     
     static acknowledgeRoundResult(roomId: string): gameModel.gameRoom {
         const room = this.getGameRoom(roomId);
-        
-        if (room.currentPhase !== 'revealing') {
-            throw new Error('Not in revealing phase');
-        }
-        
+ 
         // Check if all rounds complete
         if (room.round >= 5) {
             const winner = this.checkWinCondition(room);
-            this.transitionToGameOver(room, winner || 'chefs'); // Default to chefs if tie
+            transitionService.gameOver(room, winner || 'chefs'); // Default to chefs if null
         } else {
             // Move to next round
-            this.transitionToNextRound(room);
+            transitionService.nextRound(room);
         }
         
         return room;
@@ -410,7 +390,7 @@ export class gameRoomService {
     
     // Win Condition
     
-    private static checkWinCondition(room: gameModel.gameRoom): 'chefs' | 'impastas' | null {
+    static checkWinCondition(room: gameModel.gameRoom): 'chefs' | 'impastas' | null {
         const results = room.roundSuccessful.filter(r => r !== null) as [boolean, number][];
         
         const successCount = results.filter(r => r[0]).length;
@@ -418,7 +398,7 @@ export class gameRoomService {
         
         if (successCount >= 3) return 'chefs';
         if (failureCount >= 3) return 'impastas';
-        
+
         return null;
     }
     
