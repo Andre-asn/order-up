@@ -107,5 +107,3 @@ export function getGameConfig(playerCount: number, gamemode: 'classic' | 'hidden
     const config = GAME_CONFIGS[playerCount][gamemode];
     return config as GameConfig;
 }
-
-console.log(getGameConfig(7, 'headChef'));

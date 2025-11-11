@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia';
 import { lobbyModel } from './model.js';
 import { lobbyService } from './service.js';
 
-const roomConnections = new Map<string, Map<string, any>>(); //room id -> player ids
+const roomConnections = new Map<string, Map<string, any>>(); 
 
 export const lobbyModule = new Elysia({ prefix: '/lobby' })
     .onError(({ error, code, status }) => {
