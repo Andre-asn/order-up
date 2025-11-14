@@ -100,10 +100,10 @@
 /* Faces circle */
 .menu-faces {
   position: absolute;
-  width: min(700px, 55vw);
-  height: min(810px, 63.8vw);
+  width: min(800px, 70vw, 80vh);
+  height: min(925px, 81vw, 92.5vh);
   left: 50%;
-  top: 50%;
+  top: 35%;
   transform: translate(-50%, -50%);
   pointer-events: none;
   padding: min(80px, 6vw);
