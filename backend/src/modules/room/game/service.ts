@@ -149,8 +149,6 @@ export class gameRoomService {
     static handlePhaseTimeout(room: gameModel.gameRoom): void {
         switch (room.currentPhase) {
             case 'proposing':
-                const currentProponent = this.getCurrentProponent(room);
-
                 room.rejectionCount++;
 
                 if (room.rejectionCount >= 5) {
@@ -354,7 +352,7 @@ export class gameRoomService {
 
         if (room.round >= 5) {
             const winner = this.checkWinCondition(room);
-            transitionService.gameOver(room, winner || 'chefs');
+            transitionService.gameOver(room, winner as 'chefs' | 'impastas');
         } else {
             transitionService.nextRound(room);
         }
@@ -395,7 +393,7 @@ export class gameRoomService {
  
         if (room.round >= 5) {
             const winner = this.checkWinCondition(room);
-            transitionService.gameOver(room, winner || 'chefs');
+            transitionService.gameOver(room, winner as 'chefs' | 'impastas');
         } else {
             transitionService.nextRound(room);
         }
@@ -403,18 +401,15 @@ export class gameRoomService {
         return room;
     }
     
-    static checkWinCondition(room: gameModel.gameRoom): 'chefs' | 'impastas' | null {
+    static checkWinCondition(room: gameModel.gameRoom): 'chefs' | 'impastas' {
         if (room.rejectionCount >= 5) return 'impastas';
 
         const results = room.roundSuccessful.filter(r => r !== null) as [boolean, number][];
-
         const successCount = results.filter(r => r[0]).length;
-        const failureCount = results.filter(r => !r[0]).length;
 
         if (successCount >= 3) return 'chefs';
-        if (failureCount >= 3) return 'impastas';
 
-        return null;
+        return 'impastas';;
     }
     
     static getGameRoom(roomId: string): gameModel.gameRoom {
@@ -434,15 +429,6 @@ export class gameRoomService {
         }, 30000);
 
         cleanupTimers.set(roomId, timer);
-    }
-
-    static cleanupImmediately(roomId: string): void {
-        if (!gameRooms.has(roomId)) {
-            return;
-        }
-        gameRooms.delete(roomId);
-        cleanupTimers.delete(roomId);
-        phaseTimers.delete(roomId);
     }
 
     static cancelCleanup(roomId: string): void {
@@ -473,10 +459,6 @@ export class gameRoomService {
             clearTimeout(timer);
             disconnectTimers.delete(key);
         }
-    }
-    
-    static hasActiveConnections(roomId: string, connections: Map<string, any>): boolean {
-        return connections && connections.size > 0;
     }
     
     static deleteGameRoom(roomId: string): void {

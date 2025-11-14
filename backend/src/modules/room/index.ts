@@ -32,7 +32,7 @@ gameRoomService.setTimeoutBroadcastCallback((roomId: string, room: any) => {
         });
 
         setTimeout(() => {
-            gameRoomService.cleanupImmediately(roomId);
+            gameRoomService.deleteGameRoom(roomId);
         }, 1000);
         return;
     }
@@ -87,7 +87,7 @@ gameRoomService.setTimeoutBroadcastCallback((roomId: string, room: any) => {
                     round: room.round,
                 });
                 setTimeout(() => {
-                    gameRoomService.cleanupImmediately(roomId);
+                    gameRoomService.deleteGameRoom(roomId);
                 }, 1000);
             } else {
                 broadcastToRoom(roomId, {
@@ -400,7 +400,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
                                     round: room.round,
                                 });
                                 setTimeout(() => {
-                                    gameRoomService.cleanupImmediately(roomId);
+                                    gameRoomService.deleteGameRoom(roomId);
                                 }, 1000);
                             } else {
                                 const nextProponent = gameRoomService.getCurrentProponent(room);
@@ -461,7 +461,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
                                     round: room.round,
                                 });
                                 setTimeout(() => {
-                                    gameRoomService.cleanupImmediately(roomId);
+                                    gameRoomService.deleteGameRoom(roomId);
                                 }, 1000);
                             } else if (room.currentPhase === 'redemption') {
                                 const connections = roomConnections.get(roomId);
@@ -532,7 +532,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
                         });
 
                         setTimeout(() => {
-                            gameRoomService.cleanupImmediately(roomId);
+                            gameRoomService.deleteGameRoom(roomId);
                         }, 1000);
                         break;
                     }
