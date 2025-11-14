@@ -1,13 +1,9 @@
 import { Elysia } from "elysia";
-import { lobbyModule } from "./modules/lobby"; // ← Import your module
+import { roomModule } from "./modules/room";
 import { cors } from "@elysiajs/cors";
 
 const app = new Elysia()
   .get("/", () => "Hello Elysia")
   .use(cors())
-  .use(lobbyModule) // ← Register the lobby routes
+  .use(roomModule)
   .listen(3000);
-
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);

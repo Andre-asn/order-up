@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import '../styles/lobby.css'
@@ -30,74 +30,73 @@ export default function LobbyScreen() {
     const location = useLocation() as { state?: any }
     const [params] = useSearchParams()
     const navigate = useNavigate()
-    
-    const initial = location.state?.lobbyData
-    const [roomCode] = useState<string>(initial?.roomId ?? params.get('roomId') ?? '')
-    const playerIdParam = params.get('playerId') ?? ''
-    const currentPlayerId = playerIdParam || (typeof localStorage !== 'undefined' ? (localStorage.getItem('playerId') ?? '') : '')
 
-    // State for lobby (updates via WebSocket)
+    const initial = location.state?.lobbyData
+    const [roomCode] = useState<string>(() => {
+        return initial?.lobby?.roomId ?? initial?.roomId ?? params.get('roomId') ?? ''
+    })
+    const [currentPlayerId] = useState<string>(() => {
+        const playerIdParam = params.get('playerId')
+        return playerIdParam || localStorage.getItem('playerId') || ''
+    })
+
     const [lobby, setLobby] = useState<ApiLobby | null>(initial?.lobby ?? null)
     const [ws, setWs] = useState<WebSocket | null>(null)
     const [error, setError] = useState<string>('')
-    
+    const mountedRef = useRef(true)
+
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
-    // Connect WebSocket on mount
     useEffect(() => {
         if (!roomCode || !currentPlayerId) {
             setError('Missing room code or player ID')
             return
         }
 
-        const wsUrl = `ws://localhost:3000/lobby/${roomCode}?playerId=${currentPlayerId}`
+        const wsUrl = `ws://localhost:3000/room/${roomCode}?playerId=${currentPlayerId}`
         const websocket = new WebSocket(wsUrl)
 
         websocket.onopen = () => {
-            console.log('WebSocket connected')
-            setError('')
+            if (mountedRef.current) {
+                setError('')
+            }
         }
 
         websocket.onmessage = (event) => {
+            if (!mountedRef.current) return
+
             const payload = JSON.parse(event.data)
-            
+
             switch (payload.type) {
                 case 'lobby_update':
-                    console.log('Lobby updated:', payload.lobby)
                     setLobby(payload.lobby)
                     break
-                    
+
                 case 'game_starting':
-                    console.log('Game starting!')
-                    navigate(`/game/${roomCode}`)
+                    navigate(`/game/${roomCode}?playerId=${currentPlayerId}`)
                     break
-                    
+
                 case 'error':
-                    console.error('Server error:', payload.message)
                     setError(payload.message)
                     break
             }
         }
 
-        websocket.onerror = (error) => {
-            console.error('WebSocket error:', error)
-            setError('Connection error')
+        websocket.onerror = () => {
+            if (mountedRef.current) {
+                setError('Connection error')
+            }
         }
 
-        websocket.onclose = () => {
-            console.log('WebSocket disconnected')
-        }
+        websocket.onclose = () => {}
 
         setWs(websocket)
 
-        // Cleanup on unmount
         return () => {
+            mountedRef.current = false
             websocket.close()
         }
-    }, [roomCode, currentPlayerId, navigate])
-
-    // Avatars: deterministically assign by server-reported order, ensuring
-    // no duplicates and consistency across devices (index-based).
+    }, [roomCode, currentPlayerId])
 
     const derivedHostId = useMemo(() => {
         const id = lobby?.hostId
@@ -167,7 +166,6 @@ export default function LobbyScreen() {
                 </div>
             )}
 
-            {/* Title */}
             <div className="lobby-title-wrap">
                 <h1 className="lobby-title">Kitchen</h1>
                 <div className="room-code">
@@ -179,12 +177,10 @@ export default function LobbyScreen() {
                 </div>
             </div>
 
-            {/* Corner: Gamemode */}
             {lobby?.gamemode && (
                 <div className="lobby-corner right">Mode: {lobby.gamemode.toUpperCase()}</div>
             )}
 
-            {/* Players Grid */}
             <div className="players-grid">
                 {players.map((player, index) => {
                     const isYou = !player.isEmpty && player.id === currentPlayerId
@@ -221,7 +217,6 @@ export default function LobbyScreen() {
                 })}
             </div>
 
-            {/* Status Bar */}
             <div className="status-bar">
                 {totalPlayers}/8 chefs in kitchen • 
                 {totalPlayers < 6 
@@ -230,7 +225,6 @@ export default function LobbyScreen() {
                 }
             </div>
 
-            {/* Actions */}
             <div className="actions">
                 <button
                     className="start-btn"

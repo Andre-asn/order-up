@@ -1,16 +1,47 @@
 /* Root container */
 .menu-root {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for iOS Safari */
   background: #ffffff;
   overflow: hidden;
+}
+
+/* Music toggle button */
+.music-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.2s ease;
+}
+.music-toggle-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1F2328;
+}
+.music-toggle:hover {
+  transform: scale(1.1);
+}
+.music-toggle:active {
+  transform: scale(0.95);
 }
 
 /* Stage centers content */
 .menu-stage {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for iOS Safari */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -21,7 +52,8 @@
 /* Title */
 .menu-title {
   text-align: center;
-  margin-bottom: 32px;
+  margin-top: 16px;
+  margin-bottom: 25px;
 }
 .menu-title-row {
   display: flex;
@@ -50,16 +82,16 @@
 /* Faces circle */
 .menu-faces {
   position: absolute;
-  width: 640px;
-  height: 740px;
+  width: min(1000px, 80vw);
+  height: min(1156px, 92.48vw);
   left: 50%;
-  top: 50%;
+  top: 35%;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
 .face {
   position: absolute;
-  width: 89px;
+  width: min(138px, 11vw);
   height: auto;
   object-fit: contain;
   object-position: center;
@@ -81,22 +113,24 @@
   justify-content: center;
 }
 .pot-img {
-  width: clamp(320px, 40vw, 384px);
-  height: clamp(320px, 40vw, 384px);
+  width: clamp(320px, 50vw, 600px);
+  height: clamp(320px, 50vw, 600px);
 }
 
 /* Buttons inside pot */
 .menu-buttons {
   position: absolute;
-  inset: 0;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-top: 32px;
+  gap: 20px;
+  width: max-content;
 }
-.menu-btn-stack { display: flex; flex-direction: column; gap: 12px; }
+.menu-btn-stack { display: flex; flex-direction: row; gap: 20px; }
 
 .menu-btn {
   position: relative;
@@ -130,6 +164,19 @@
 .corner-tr { top: -8px; right: -8px; }
 .corner-bl { bottom: -8px; left: -8px; }
 
+.music-container {
+    position: absolute;
+    top: 25px;
+    left: 25%;
+    transform: translateX(-50%) rotate(-2deg);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: max-content;
+}
+
 /* Corner decorations */
 .corner.deco { position: absolute; }
 .corner.deco.tl { top: 16px; left: 16px; }
@@ -148,7 +195,35 @@
 .modal-error { color: #d00; font-weight: 700; margin-top: 8px; }
 .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 14px; }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  /* Lock viewport and prevent scrolling on menu only */
+  .menu-root {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    touch-action: none; /* Prevent touch scrolling */
+  }
+  .menu-stage {
+    justify-content: flex-start;
+    padding-top: 8px;
+    overflow: hidden;
+  }
+
+  /* Fix title at top of screen */
+  .menu-title {
+    position: fixed;
+    top: 8px;
+    left: 0;
+    right: 0;
+    margin-bottom: 8px;
+    margin-top: 8px;
+    z-index: 3;
+  }
+  .menu-title-text { font-size: clamp(48px, 12vw, 78px); }
+
   /* Scale the ring to always fit within the viewport, slightly larger */
   .menu-faces { width: min(86vw, 54vh); height: min(86vw, 54vh); }
   /* Scale faces with viewport to avoid clipping */
@@ -157,13 +232,24 @@
   .menu-pot { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; z-index: 1; }
   /* Reduce pot size on very small screens so content fits */
   .pot-img { width: clamp(200px, 60vw, 320px); height: clamp(200px, 60vw, 320px); }
-  /* Keep buttons centered on screen on small screens */
-  .menu-buttons { position: fixed; inset: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); margin-top: 0; z-index: 2; }
+  /* Keep buttons centered on screen on small screens - override desktop layout */
+  .menu-buttons {
+    position: fixed;
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin-top: 0;
+    z-index: 2;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .menu-btn-stack {
+    flex-direction: column;
+    gap: 12px;
+  }
   /* Ring surrounds the buttons: fix and center same as buttons */
   .menu-faces { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 0; }
-  /* Title placed near the top */
-  .menu-stage { justify-content: flex-start; padding-top: 16px; }
-  .menu-title { margin-bottom: 12px; }
 }
 
 
