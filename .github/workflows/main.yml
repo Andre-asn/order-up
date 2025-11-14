@@ -44,7 +44,7 @@ jobs:
           while [ $attempt -le $max_attempts ]; do
             echo "Health check attempt $attempt of $max_attempts"
 
-            if curl -f https://${{ secrets.HEROKU_BACKEND_APP_NAME }}.herokuapp.com/health; then
+            if curl -f ${{ secrets.BACKEND_API_URL }}/health; then
               echo "Backend is healthy!"
               exit 0
             fi
