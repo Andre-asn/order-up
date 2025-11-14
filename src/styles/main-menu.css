@@ -100,12 +100,13 @@
 /* Faces circle */
 .menu-faces {
   position: absolute;
-  width: min(1000px, 80vw);
-  height: min(1156px, 92.48vw);
+  width: min(800px, 65vw);
+  height: min(925px, 75.3vw);
   left: 50%;
   top: 35%;
   transform: translate(-50%, -50%);
   pointer-events: none;
+  padding: min(80px, 6vw);
 }
 .face {
   position: absolute;
@@ -243,7 +244,7 @@
   .menu-title-text { font-size: clamp(48px, 12vw, 78px); }
 
   /* Scale the ring to always fit within the viewport, slightly larger */
-  .menu-faces { width: min(86vw, 54vh); height: min(86vw, 54vh); }
+  .menu-faces { width: min(86vw, 54vh); height: min(86vw, 54vh); padding: min(48px, 8vw); }
   /* Scale faces with viewport to avoid clipping */
   .face { width: clamp(56px, 12vw, 90px); height: auto; object-fit: contain; object-position: center; }
   /* Move soup pot to bottom on small screens */
