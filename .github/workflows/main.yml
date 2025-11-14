@@ -6,35 +6,82 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-backend:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy Backend to Heroku
-        uses: akhileshns/heroku-deploy@v3.13.15
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ secrets.HEROKU_BACKEND_APP_NAME }}
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
-          usedocker: true
-          docker_build_args: |
-            NODE_ENV
-          appdir: backend
-          healthcheck: "https://${{ secrets.HEROKU_BACKEND_APP_NAME }}.herokuapp.com/health"
-          delay: 10
-          rollbackonhealthcheckfailed: true
+      - name: Build, Push and Release Backend to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Login to Heroku Container Registry
+          echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
 
-      - name: Deploy Frontend to Heroku
-        uses: akhileshns/heroku-deploy@v3.13.15
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ secrets.HEROKU_FRONTEND_APP_NAME }}
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
-          usedocker: true
-          docker_build_args: |
-            VITE_API_BASE
-          env_file: .env.production
-          appdir: .
+          # Build the Docker image
+          docker build -t registry.heroku.com/${{ secrets.HEROKU_BACKEND_APP_NAME }}/web ./backend
+
+          # Push to Heroku Container Registry
+          docker push registry.heroku.com/${{ secrets.HEROKU_BACKEND_APP_NAME }}/web
+
+          # Install Heroku CLI
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+          # Release the image
+          heroku container:release web -a ${{ secrets.HEROKU_BACKEND_APP_NAME }}
+
+      - name: Health Check Backend
+        run: |
+          echo "Waiting for backend to start..."
+          sleep 15
+
+          # Health check with retry
+          max_attempts=5
+          attempt=1
+
+          while [ $attempt -le $max_attempts ]; do
+            echo "Health check attempt $attempt of $max_attempts"
+
+            if curl -f https://${{ secrets.HEROKU_BACKEND_APP_NAME }}.herokuapp.com/health; then
+              echo "Backend is healthy!"
+              exit 0
+            fi
+
+            echo "Health check failed, waiting 10 seconds..."
+            sleep 10
+            attempt=$((attempt + 1))
+          done
+
+          echo "Backend health check failed after $max_attempts attempts"
+          exit 1
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build, Push and Release Frontend to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Login to Heroku Container Registry
+          echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
+
+          # Build the Docker image with backend URL
+          docker build \
+            --build-arg VITE_API_BASE=https://${{ secrets.HEROKU_BACKEND_APP_NAME }}.herokuapp.com \
+            -t registry.heroku.com/${{ secrets.HEROKU_FRONTEND_APP_NAME }}/web .
+
+          # Push to Heroku Container Registry
+          docker push registry.heroku.com/${{ secrets.HEROKU_FRONTEND_APP_NAME }}/web
+
+          # Install Heroku CLI
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+          # Release the image
+          heroku container:release web -a ${{ secrets.HEROKU_FRONTEND_APP_NAME }}
