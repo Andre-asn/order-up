@@ -84,6 +84,7 @@ export default function GameScreen() {
 
     const mountedRef = useRef(true)
     const reconnectTimeoutRef = useRef<number | null>(null)
+    const heartbeatIntervalRef = useRef<number | null>(null)
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
     const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -151,6 +152,13 @@ export default function GameScreen() {
                 if (mountedRef.current) {
                     setError('')
                     reconnectAttempts = 0
+
+                    // Start heartbeat to prevent Heroku idle timeout (55s)
+                    heartbeatIntervalRef.current = window.setInterval(() => {
+                        if (websocket.readyState === WebSocket.OPEN) {
+                            websocket.send(JSON.stringify({ type: 'ping' }))
+                        }
+                    }, 30000) // Send ping every 30 seconds
                 }
             }
 
@@ -228,6 +236,12 @@ export default function GameScreen() {
             websocket.onclose = (event) => {
                 if (!mountedRef.current) return
 
+                // Clear heartbeat interval
+                if (heartbeatIntervalRef.current) {
+                    clearInterval(heartbeatIntervalRef.current)
+                    heartbeatIntervalRef.current = null
+                }
+
                 // Don't reconnect if close was clean (user left intentionally or game over)
                 if (event.code === 1000) return
 
@@ -255,6 +269,9 @@ export default function GameScreen() {
             mountedRef.current = false
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current)
+            }
+            if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current)
             }
             if (ws) {
                 ws.close(1000)
