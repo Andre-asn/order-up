@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useMusic } from '../components/MusicContext'
 import soupGif from '../assets/soup.gif'
+import kitchenBg from '../assets/kitchen-background.gif'
 import u1 from '../assets/Untitled-1.gif'
 import u2 from '../assets/Untitled-2.gif'
 import u3 from '../assets/Untitled-3.gif'
@@ -169,6 +170,11 @@ export default function MainMenu() {
 
   return (
     <div className="menu-root">
+      {/* Kitchen Background */}
+      <div className="menu-background">
+        <img src={kitchenBg} alt="" className="menu-background-kitchen" />
+      </div>
+
       <div className="menu-stage">
         <div className="menu-title">
           <div className="menu-title-row">
