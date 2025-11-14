@@ -401,15 +401,19 @@ export class gameRoomService {
         return room;
     }
     
-    static checkWinCondition(room: gameModel.gameRoom): 'chefs' | 'impastas' {
+    static checkWinCondition(room: gameModel.gameRoom): 'chefs' | 'impastas' | null {
+        // Check rejection count first - if 5 rejections, impastas win
         if (room.rejectionCount >= 5) return 'impastas';
 
         const results = room.roundSuccessful.filter(r => r !== null) as [boolean, number][];
+
         const successCount = results.filter(r => r[0]).length;
+        const failureCount = results.filter(r => !r[0]).length;
 
         if (successCount >= 3) return 'chefs';
+        if (failureCount >= 3) return 'impastas';
 
-        return 'impastas';;
+        return null;
     }
     
     static getGameRoom(roomId: string): gameModel.gameRoom {

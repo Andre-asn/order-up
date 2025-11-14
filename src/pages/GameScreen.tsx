@@ -83,6 +83,7 @@ export default function GameScreen() {
     const [isRedemptionImpasta, setIsRedemptionImpasta] = useState(false)
 
     const mountedRef = useRef(true)
+    const reconnectTimeoutRef = useRef<number | null>(null)
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
     const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -135,91 +136,129 @@ export default function GameScreen() {
             return
         }
 
-        const wsUrl = `ws://localhost:3000/room/${roomId}?playerId=${currentPlayerId}`
-        const websocket = new WebSocket(wsUrl)
+        let reconnectAttempts = 0
+        const maxReconnectAttempts = 5
 
-        websocket.onopen = () => {
-        }
+        const connect = () => {
+            // Get WebSocket URL from API_BASE environment variable
+            const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3000'
+            const wsProtocol = API_BASE.startsWith('https') ? 'wss' : 'ws'
+            const wsHost = API_BASE.replace(/^https?:\/\//, '')
+            const wsUrl = `${wsProtocol}://${wsHost}/room/${roomId}?playerId=${currentPlayerId}`
+            const websocket = new WebSocket(wsUrl)
 
-        websocket.onmessage = (event) => {
-            if (!mountedRef.current) return
-            const payload = JSON.parse(event.data)
+            websocket.onopen = () => {
+                if (mountedRef.current) {
+                    setError('')
+                    reconnectAttempts = 0
+                }
+            }
 
-            switch (payload.type) {
-                case 'game_update':
-                    setGame(payload.game)
-                    break
+            websocket.onmessage = (event) => {
+                if (!mountedRef.current) return
+                const payload = JSON.parse(event.data)
 
-                case 'role_reveal':
-                    setRole({
-                        yourRole: payload.yourRole,
-                        isHeadChef: payload.isHeadChef,
-                        isHiddenImpasta: payload.isHiddenImpasta || false,
-                        knownImpastas: payload.knownImpastas || []
-                    })
-                    break
+                switch (payload.type) {
+                    case 'game_update':
+                        setGame(payload.game)
+                        break
 
-                case 'phase_change':
-                    if (payload.newPhase !== 'cooking') {
+                    case 'role_reveal':
+                        setRole({
+                            yourRole: payload.yourRole,
+                            isHeadChef: payload.isHeadChef,
+                            isHiddenImpasta: payload.isHiddenImpasta || false,
+                            knownImpastas: payload.knownImpastas || []
+                        })
+                        break
+
+                    case 'phase_change':
+                        if (payload.newPhase !== 'cooking') {
+                            setSelectedChefs([])
+                        }
+                        break
+
+                    case 'proposal_started':
                         setSelectedChefs([])
-                    }
-                    break
+                        break
 
-                case 'proposal_started':
-                    setSelectedChefs([])
-                    break
+                    case 'round_complete':
+                        setLastRoundResult({ success: payload.success, rottenCount: payload.rottenCount })
+                        setShowRoundResult(true)
+                        setTimeout(() => {
+                            setShowRoundResult(false)
+                        }, 4000)
+                        break
 
-                case 'round_complete':
-                    setLastRoundResult({ success: payload.success, rottenCount: payload.rottenCount })
-                    setShowRoundResult(true)
-                    setTimeout(() => {
-                        setShowRoundResult(false)
-                    }, 4000)
-                    break
+                    case 'game_over':
+                        websocket.close(1000)
 
-                case 'game_over':
-                    websocket.close()
+                        const gameOverState = {
+                            winner: payload.winner,
+                            impastas: payload.impastas || [],
+                            headChef: payload.headChef || null,
+                            yourRole: role?.yourRole || 'chef',
+                            players: payload.players || [],
+                            roundSuccessful: payload.roundSuccessful || [],
+                            playerCount: payload.players?.length || 6,
+                            currentRound: payload.round || 1
+                        }
 
-                    const gameOverState = {
-                        winner: payload.winner,
-                        impastas: payload.impastas || [],
-                        headChef: payload.headChef || null,
-                        yourRole: role?.yourRole || 'chef',
-                        players: payload.players || [],
-                        roundSuccessful: payload.roundSuccessful || [],
-                        playerCount: payload.players?.length || 6,
-                        currentRound: payload.round || 1
-                    }
+                        navigate('/gameover', {
+                            state: gameOverState
+                        })
+                        break
 
-                    navigate('/gameover', {
-                        state: gameOverState
-                    })
-                    break
+                    case 'redemption_selected':
+                        setIsRedemptionImpasta(true)
+                        break
 
-                case 'redemption_selected':
-                    setIsRedemptionImpasta(true)
-                    break
-
-                case 'error':
-                    setError(payload.message)
-                    break
+                    case 'error':
+                        setError(payload.message)
+                        break
+                }
             }
-        }
 
-        websocket.onerror = () => {
-            if (mountedRef.current) {
-                setError('Connection error')
+            websocket.onerror = () => {
+                if (mountedRef.current) {
+                    console.error('WebSocket error occurred')
+                }
             }
+
+            websocket.onclose = (event) => {
+                if (!mountedRef.current) return
+
+                // Don't reconnect if close was clean (user left intentionally or game over)
+                if (event.code === 1000) return
+
+                // Attempt to reconnect if connection dropped unexpectedly
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000)
+
+                    reconnectTimeoutRef.current = window.setTimeout(() => {
+                        if (mountedRef.current) {
+                            connect()
+                        }
+                    }, delay)
+                } else {
+                    setError('Connection lost. Please refresh the page.')
+                }
+            }
+
+            setWs(websocket)
         }
 
-        websocket.onclose = () => {
-        }
-
-        setWs(websocket)
+        connect()
 
         return () => {
             mountedRef.current = false
-            websocket.close()
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current)
+            }
+            if (ws) {
+                ws.close(1000)
+            }
         }
     }, [roomId, currentPlayerId])
 
@@ -268,7 +307,7 @@ export default function GameScreen() {
     }, [game, currentPlayerId])
 
     const handleProposeChefs = () => {
-        if (!ws || !roomId || selectedChefs.length === 0) return
+        if (!ws || !roomId || selectedChefs.length === 0 || ws.readyState !== WebSocket.OPEN) return
 
         ws.send(JSON.stringify({
             type: 'propose_chefs',
@@ -279,7 +318,7 @@ export default function GameScreen() {
     }
 
     const handleSkipProposal = () => {
-        if (!ws || !roomId) return
+        if (!ws || !roomId || ws.readyState !== WebSocket.OPEN) return
 
         ws.send(JSON.stringify({
             type: 'skip_proposal',
@@ -289,7 +328,7 @@ export default function GameScreen() {
     }
 
     const handleVote = (inFavor: boolean) => {
-        if (!ws || !roomId) return
+        if (!ws || !roomId || ws.readyState !== WebSocket.OPEN) return
 
         ws.send(JSON.stringify({
             type: 'vote',
@@ -300,7 +339,7 @@ export default function GameScreen() {
     }
 
     const handleSelectIngredient = (ingredient: 'healthy' | 'rotten') => {
-        if (!ws || !roomId) return
+        if (!ws || !roomId || ws.readyState !== WebSocket.OPEN) return
 
         ws.send(JSON.stringify({
             type: 'select_ingredient',
@@ -311,7 +350,7 @@ export default function GameScreen() {
     }
 
     const handleKillChef = (targetChefId: string) => {
-        if (!ws || !roomId) return
+        if (!ws || !roomId || ws.readyState !== WebSocket.OPEN) return
 
         ws.send(JSON.stringify({
             type: 'kill_chef',

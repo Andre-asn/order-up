@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: order-up-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    networks:
+      - order-up-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: order-up-frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE=http://localhost:3000
+    restart: unless-stopped
+    networks:
+      - order-up-network
+    depends_on:
+      - backend
+
+networks:
+  order-up-network:
+    driver: bridge

@@ -44,6 +44,7 @@ export default function LobbyScreen() {
     const [ws, setWs] = useState<WebSocket | null>(null)
     const [error, setError] = useState<string>('')
     const mountedRef = useRef(true)
+    const reconnectTimeoutRef = useRef<number | null>(null)
 
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
@@ -53,48 +54,84 @@ export default function LobbyScreen() {
             return
         }
 
-        const wsUrl = `ws://localhost:3000/room/${roomCode}?playerId=${currentPlayerId}`
-        const websocket = new WebSocket(wsUrl)
+        let reconnectAttempts = 0
+        const maxReconnectAttempts = 5
 
-        websocket.onopen = () => {
-            if (mountedRef.current) {
-                setError('')
+        const connect = () => {
+            // Get WebSocket URL from API_BASE environment variable
+            const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3000'
+            const wsProtocol = API_BASE.startsWith('https') ? 'wss' : 'ws'
+            const wsHost = API_BASE.replace(/^https?:\/\//, '')
+            const wsUrl = `${wsProtocol}://${wsHost}/room/${roomCode}?playerId=${currentPlayerId}`
+            const websocket = new WebSocket(wsUrl)
+
+            websocket.onopen = () => {
+                if (mountedRef.current) {
+                    setError('')
+                    reconnectAttempts = 0
+                }
             }
+
+            websocket.onmessage = (event) => {
+                if (!mountedRef.current) return
+
+                const payload = JSON.parse(event.data)
+
+                switch (payload.type) {
+                    case 'lobby_update':
+                        setLobby(payload.lobby)
+                        break
+
+                    case 'game_starting':
+                        navigate(`/game/${roomCode}?playerId=${currentPlayerId}`)
+                        break
+
+                    case 'error':
+                        setError(payload.message)
+                        break
+                }
+            }
+
+            websocket.onerror = () => {
+                if (mountedRef.current) {
+                    console.error('WebSocket error occurred')
+                }
+            }
+
+            websocket.onclose = (event) => {
+                if (!mountedRef.current) return
+
+                // Don't reconnect if close was clean (user left intentionally)
+                if (event.code === 1000) return
+
+                // Attempt to reconnect if connection dropped unexpectedly
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000)
+
+                    reconnectTimeoutRef.current = window.setTimeout(() => {
+                        if (mountedRef.current) {
+                            connect()
+                        }
+                    }, delay)
+                } else {
+                    setError('Connection lost. Please refresh the page.')
+                }
+            }
+
+            setWs(websocket)
         }
 
-        websocket.onmessage = (event) => {
-            if (!mountedRef.current) return
-
-            const payload = JSON.parse(event.data)
-
-            switch (payload.type) {
-                case 'lobby_update':
-                    setLobby(payload.lobby)
-                    break
-
-                case 'game_starting':
-                    navigate(`/game/${roomCode}?playerId=${currentPlayerId}`)
-                    break
-
-                case 'error':
-                    setError(payload.message)
-                    break
-            }
-        }
-
-        websocket.onerror = () => {
-            if (mountedRef.current) {
-                setError('Connection error')
-            }
-        }
-
-        websocket.onclose = () => {}
-
-        setWs(websocket)
+        connect()
 
         return () => {
             mountedRef.current = false
-            websocket.close()
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current)
+            }
+            if (ws) {
+                ws.close(1000) // Clean close
+            }
         }
     }, [roomCode, currentPlayerId])
 
@@ -131,8 +168,8 @@ export default function LobbyScreen() {
     const canStart = totalPlayers >= 6 && totalPlayers <= 8 && isHost
 
     const handleStartGame = () => {
-        if (!ws || !canStart) return
-        
+        if (!ws || !canStart || ws.readyState !== WebSocket.OPEN) return
+
         ws.send(JSON.stringify({
             type: 'start_game',
             roomId: roomCode,
@@ -141,7 +178,7 @@ export default function LobbyScreen() {
     }
 
     const handleLeave = () => {
-        if (ws) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
                 type: 'player_left',
                 roomId: roomCode,
