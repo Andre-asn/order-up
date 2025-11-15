@@ -78,6 +78,10 @@ export namespace gameModel {
     export type gameRoom = typeof gameRoom.static
 
     export const wsEvents = {
+        keepaliveAck: t.Object({
+            type: t.Literal('keepalive_ack'),
+        }),
+
         proposeChefs: t.Object({
             type: t.Literal('propose_chefs'),
             roomId: t.String(),

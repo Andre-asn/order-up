@@ -207,6 +207,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
         body: t.Union([
             lobbyModel.wsEvents.startGame,
 
+            gameModel.wsEvents.keepaliveAck,
             gameModel.wsEvents.proposeChefs,
             gameModel.wsEvents.skipProposal,
             gameModel.wsEvents.vote,
@@ -298,6 +299,11 @@ export const roomModule = new Elysia({ prefix: '/room' })
 
             try {
                 switch (message.type) {
+                    case 'keepalive_ack':
+                        // Client acknowledged keepalive - this creates bidirectional traffic for Heroku
+                        // No action needed, just acknowledge receipt
+                        break;
+
                     case 'start_game': {
                         const lobby = lobbyService.getLobby(roomId);
                         lobbyService.validateGameStart(lobby, playerId);
