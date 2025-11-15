@@ -180,6 +180,10 @@ export default function GameScreen() {
                         console.log('[Heartbeat] Received pong from server')
                         break
 
+                    case 'keepalive':
+                        // Server-initiated keepalive to prevent Heroku timeout
+                        break
+
                     case 'game_update':
                         setGame(payload.game)
                         break

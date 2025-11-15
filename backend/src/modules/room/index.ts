@@ -5,6 +5,31 @@ import { lobbyService } from './lobby/service';
 import { gameRoomService } from './game/service';
 
 const roomConnections = new Map<string, Map<string, any>>();
+
+// Server-side keepalive to prevent Heroku idle timeout (55s)
+// Send keepalive every 30 seconds to all active connections
+setInterval(() => {
+	const keepaliveMessage = JSON.stringify({ type: 'keepalive' });
+	let totalConnections = 0;
+	let activeConnections = 0;
+	
+	roomConnections.forEach((connections) => {
+		connections.forEach((ws) => {
+			totalConnections++;
+			try {
+				ws.send(keepaliveMessage);
+				activeConnections++;
+			} catch (error) {
+				// Connection might be closed, ignore
+			}
+		});
+	});
+	
+	if (totalConnections > 0) {
+		console.log(`[Keepalive] Sent to ${activeConnections}/${totalConnections} connections`);
+	}
+}, 30000); // Every 30 seconds
+
 gameRoomService.setTimeoutBroadcastCallback((roomId: string, room: any) => {
     const connections = roomConnections.get(roomId);
     if (!connections) return;
@@ -274,7 +299,12 @@ export const roomModule = new Elysia({ prefix: '/room' })
                 // Handle heartbeat ping - respond with pong to keep connection alive
                 if (message.type === 'ping') {
                     console.log(`[Heartbeat] Received ping from player ${playerId} in room ${roomId}`);
-                    ws.send(JSON.stringify({ type: 'pong' }));
+                    try {
+                        ws.send(JSON.stringify({ type: 'pong' }));
+                        console.log(`[Heartbeat] Sent pong to player ${playerId} in room ${roomId}`);
+                    } catch (error) {
+                        console.error(`[Heartbeat] Failed to send pong to player ${playerId}:`, error);
+                    }
                     return;
                 }
 

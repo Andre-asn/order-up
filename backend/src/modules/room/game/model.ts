@@ -120,6 +120,10 @@ export namespace gameModel {
             type: t.Literal('pong'),
         }),
 
+        keepalive: t.Object({
+            type: t.Literal('keepalive'),
+        }),
+
         gameUpdate: t.Object({
             type: t.Literal('game_update'),
             game: t.Any(),

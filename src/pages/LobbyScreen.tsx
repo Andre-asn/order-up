@@ -96,6 +96,10 @@ export default function LobbyScreen() {
                         console.log('[Heartbeat] Received pong from server')
                         break
 
+                    case 'keepalive':
+                        // Server-initiated keepalive to prevent Heroku timeout
+                        break
+
                     case 'lobby_update':
                         setLobby(payload.lobby)
                         break
