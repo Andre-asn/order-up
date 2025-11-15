@@ -262,31 +262,22 @@ export const roomModule = new Elysia({ prefix: '/room' })
                     gameRoomService.cancelDisconnectRemoval(roomId, playerId);
                     gameRoomService.cancelCleanup(roomId);
                     const gameRoom = room as gameModel.gameRoom;
-
+                    
                     ws.send(JSON.stringify({
                         type: 'game_update',
                         game: getClientGameState(gameRoom),
                     }));
-
+                    
                     ws.send(JSON.stringify({
                         type: 'role_reveal',
                         ...getPlayerRoleInfo(gameRoom, playerId),
                     }));
-
+                    
                     ws.send(JSON.stringify({
                         type: 'phase_change',
                         newPhase: gameRoom.currentPhase,
                         deadline: gameRoom.phaseDeadline,
                     }));
-
-                    // If in proposing phase, send proposal_started so client knows the proponent
-                    if (gameRoom.currentPhase === 'proposing') {
-                        ws.send(JSON.stringify({
-                            type: 'proposal_started',
-                            proponent: gameRoomService.getCurrentProponent(gameRoom),
-                            deadline: gameRoom.phaseDeadline!,
-                        }));
-                    }
                 } else {
                     ws.send(JSON.stringify({
                         type: 'lobby_update',
@@ -322,25 +313,34 @@ export const roomModule = new Elysia({ prefix: '/room' })
                         const connections = roomConnections.get(roomId);
                         if (connections) {
                             connections.forEach((clientWs) => {
-                                // Send game starting notification to trigger client navigation
                                 clientWs.send(JSON.stringify({
                                     type: 'game_starting',
                                     roomId,
                                 }));
-                            });
 
-                            // Close all lobby WebSocket connections cleanly after a short delay
-                            // This prevents duplicate connections (lobby + game) and H15 errors
-                            // Clients will automatically reconnect when GameScreen mounts
-                            setTimeout(() => {
-                                connections.forEach((clientWs) => {
-                                    try {
-                                        clientWs.close(1000, 'Game starting - please reconnect');
-                                    } catch (e) {
-                                        // Connection might already be closed
-                                    }
-                                });
-                            }, 500);
+                                clientWs.send(JSON.stringify({
+                                    type: 'game_update',
+                                    game: getClientGameState(gameRoom),
+                                }));
+
+                                const clientPlayerId = clientWs.data.query.playerId;
+                                clientWs.send(JSON.stringify({
+                                    type: 'role_reveal',
+                                    ...getPlayerRoleInfo(gameRoom, clientPlayerId),
+                                }));
+
+                                clientWs.send(JSON.stringify({
+                                    type: 'phase_change',
+                                    newPhase: gameRoom.currentPhase,
+                                    deadline: gameRoom.phaseDeadline,
+                                }));
+
+                                clientWs.send(JSON.stringify({
+                                    type: 'proposal_started',
+                                    proponent: gameRoomService.getCurrentProponent(gameRoom),
+                                    deadline: gameRoom.phaseDeadline!,
+                                }));
+                            });
                         }
                         
                         break;
