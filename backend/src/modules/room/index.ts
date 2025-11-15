@@ -12,15 +12,24 @@ const roomConnections = new Map<string, Map<string, any>>();
 // Must send actual JSON messages every 30s to prevent H15 timeout
 setInterval(() => {
 	const keepaliveMsg = JSON.stringify({ type: 'keepalive', ts: Date.now() });
+	let totalConnections = 0;
+	let sentCount = 0;
 
 	roomConnections.forEach((connections) => {
 		connections.forEach((ws) => {
+			totalConnections++;
 			try {
 				ws.send(keepaliveMsg);
+				sentCount++;
 			} catch (error) {
+				console.error('[Keepalive] Failed to send to connection:', error);
 			}
 		});
 	});
+
+	if (totalConnections > 0) {
+		console.log(`[Keepalive] Sent data frames to ${sentCount}/${totalConnections} connections`);
+	}
 }, 30000);
 
 gameRoomService.setTimeoutBroadcastCallback((roomId: string, room: any) => {
@@ -250,6 +259,18 @@ export const roomModule = new Elysia({ prefix: '/room' })
                 if (!roomConnections.has(roomId)) {
                     roomConnections.set(roomId, new Map());
                 }
+
+                // Close old connection if it exists (prevents orphaned WebSockets)
+                const existingConnection = roomConnections.get(roomId)!.get(playerId);
+                if (existingConnection) {
+                    console.log(`[Backend] Closing existing connection for ${playerId} before replacing`);
+                    try {
+                        existingConnection.close(1000, 'Replaced by new connection');
+                    } catch (error) {
+                        console.error(`[Backend] Error closing old connection:`, error);
+                    }
+                }
+
                 roomConnections.get(roomId)!.set(playerId, ws);
                 console.log(`[Backend] ✓ Registered connection for ${playerId} in room ${roomId}. Total connections: ${roomConnections.get(roomId)!.size}`);
                 
