@@ -111,7 +111,15 @@ export namespace gameModel {
             playerId: t.String(),
             targetChefId: t.String(),
         }),
-        
+
+        ping: t.Object({
+            type: t.Literal('ping'),
+        }),
+
+        pong: t.Object({
+            type: t.Literal('pong'),
+        }),
+
         gameUpdate: t.Object({
             type: t.Literal('game_update'),
             game: t.Any(),
