@@ -184,8 +184,10 @@ export const roomModule = new Elysia({ prefix: '/room' })
             gameModel.wsEvents.vote,
             gameModel.wsEvents.selectIngredient,
             gameModel.wsEvents.killChef,
+
+            t.Object({ type: t.Literal('ping') }),
         ]),
-        
+
         open(ws) {
             const { roomId } = ws.data.params;
             const playerId = ws.data.query?.playerId;
@@ -267,8 +269,13 @@ export const roomModule = new Elysia({ prefix: '/room' })
         async message(ws, message) {
             const { roomId } = ws.data.params;
             const playerId = ws.data.query.playerId;
-            
+
             try {
+                // Handle heartbeat ping (ignore it, just prevents Heroku idle timeout)
+                if (message.type === 'ping') {
+                    return;
+                }
+
                 switch (message.type) {
                     case 'start_game': {
                         const lobby = lobbyService.getLobby(roomId);
