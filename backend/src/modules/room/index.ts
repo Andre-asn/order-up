@@ -184,6 +184,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
             gameModel.wsEvents.vote,
             gameModel.wsEvents.selectIngredient,
             gameModel.wsEvents.killChef,
+            gameModel.wsEvents.ping,
         ]),
         
         open(ws) {
@@ -534,6 +535,12 @@ export const roomModule = new Elysia({ prefix: '/room' })
                         setTimeout(() => {
                             gameRoomService.deleteGameRoom(roomId);
                         }, 1000);
+                        break;
+                    }
+
+                    case 'ping': {
+                        // Respond to ping to keep connection alive (Heroku idle timeout prevention)
+                        ws.send(JSON.stringify({ type: 'pong' }));
                         break;
                     }
                 }
