@@ -7,9 +7,9 @@ import { gameRoomService } from './game/service';
 const roomConnections = new Map<string, Map<string, any>>();
 
 // Server-side keepalive to prevent Heroku idle timeout (55s)
-// Send keepalive every 30 seconds to all active connections
+// Send keepalive every 20 seconds to all active connections (well under 55s limit)
 setInterval(() => {
-	const keepaliveMessage = JSON.stringify({ type: 'keepalive' });
+	const keepaliveMessage = JSON.stringify({ type: 'keepalive', timestamp: Date.now() });
 	let totalConnections = 0;
 	let activeConnections = 0;
 	
@@ -17,8 +17,14 @@ setInterval(() => {
 		connections.forEach((ws) => {
 			totalConnections++;
 			try {
-				ws.send(keepaliveMessage);
-				activeConnections++;
+				// Try native ping first (if available), fallback to JSON message
+				if (typeof ws.ping === 'function') {
+					ws.ping();
+					activeConnections++;
+				} else {
+					ws.send(keepaliveMessage);
+					activeConnections++;
+				}
 			} catch (error) {
 				// Connection might be closed, ignore
 			}
@@ -28,7 +34,7 @@ setInterval(() => {
 	if (totalConnections > 0) {
 		console.log(`[Keepalive] Sent to ${activeConnections}/${totalConnections} connections`);
 	}
-}, 30000); // Every 30 seconds
+}, 20000); // Every 20 seconds
 
 gameRoomService.setTimeoutBroadcastCallback((roomId: string, room: any) => {
     const connections = roomConnections.get(roomId);

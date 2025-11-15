@@ -76,13 +76,13 @@ export default function LobbyScreen() {
                     websocket.send(JSON.stringify({ type: 'ping' }))
 
                     // Start heartbeat to prevent Heroku idle timeout (55s)
-                    // Send every 25 seconds to be safe (well under 55s limit)
+                    // Send every 20 seconds to be safe (well under 55s limit)
                     heartbeatIntervalRef.current = window.setInterval(() => {
                         if (websocket.readyState === WebSocket.OPEN) {
                             console.log('[Heartbeat] Sending ping')
                             websocket.send(JSON.stringify({ type: 'ping' }))
                         }
-                    }, 25000) // Send ping every 25 seconds
+                    }, 20000) // Send ping every 20 seconds
                 }
             }
 
