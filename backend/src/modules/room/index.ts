@@ -271,9 +271,10 @@ export const roomModule = new Elysia({ prefix: '/room' })
             const playerId = ws.data.query.playerId;
 
             try {
-                // Handle heartbeat ping (ignore it, just prevents Heroku idle timeout)
+                // Handle heartbeat ping - respond with pong to keep connection alive
                 if (message.type === 'ping') {
                     console.log(`[Heartbeat] Received ping from player ${playerId} in room ${roomId}`);
+                    ws.send(JSON.stringify({ type: 'pong' }));
                     return;
                 }
 

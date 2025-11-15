@@ -156,13 +156,18 @@ export default function GameScreen() {
                     setError('')
                     reconnectAttempts = 0
 
+                    // Send immediate ping on connection
+                    console.log('[Heartbeat] Connection opened, sending initial ping')
+                    websocket.send(JSON.stringify({ type: 'ping' }))
+
                     // Start heartbeat to prevent Heroku idle timeout (55s)
+                    // Send every 25 seconds to be safe (well under 55s limit)
                     heartbeatIntervalRef.current = window.setInterval(() => {
                         if (websocket.readyState === WebSocket.OPEN) {
                             console.log('[Heartbeat] Sending ping')
                             websocket.send(JSON.stringify({ type: 'ping' }))
                         }
-                    }, 30000) // Send ping every 30 seconds
+                    }, 25000) // Send ping every 25 seconds
                 }
             }
 
@@ -171,6 +176,10 @@ export default function GameScreen() {
                 const payload = JSON.parse(event.data)
 
                 switch (payload.type) {
+                    case 'pong':
+                        console.log('[Heartbeat] Received pong from server')
+                        break
+
                     case 'game_update':
                         setGame(payload.game)
                         break
