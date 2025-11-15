@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useRoomWebSocket } from '../contexts/RoomWebSocketContext'
 
 import '../styles/lobby.css'
 import a1 from '../assets/Untitled-1.gif'
@@ -28,120 +29,45 @@ type ApiLobby = {
 
 export default function LobbyScreen() {
     const location = useLocation() as { state?: any }
-    const [params] = useSearchParams()
     const navigate = useNavigate()
+    const { ws, error, setError, playerId: currentPlayerId, roomId } = useRoomWebSocket()
 
     const initial = location.state?.lobbyData
-    const [roomCode] = useState<string>(() => {
-        return initial?.lobby?.roomId ?? initial?.roomId ?? params.get('roomId') ?? ''
-    })
-    const [currentPlayerId] = useState<string>(() => {
-        const playerIdParam = params.get('playerId')
-        return playerIdParam || localStorage.getItem('playerId') || ''
-    })
-
     const [lobby, setLobby] = useState<ApiLobby | null>(initial?.lobby ?? null)
-    const [ws, setWs] = useState<WebSocket | null>(null)
-    const [error, setError] = useState<string>('')
-    const mountedRef = useRef(true)
-    const reconnectTimeoutRef = useRef<number | null>(null)
 
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
+    // Listen for WebSocket messages
     useEffect(() => {
-        if (!roomCode || !currentPlayerId) {
-            setError('Missing room code or player ID')
-            return
-        }
+        const handleMessage = (event: Event) => {
+            const customEvent = event as CustomEvent
+            const payload = customEvent.detail
 
-        let reconnectAttempts = 0
-        const maxReconnectAttempts = 5
+            switch (payload.type) {
+                case 'lobby_update':
+                    setLobby(payload.lobby)
+                    break
 
-        const connect = () => {
-            // Get WebSocket URL from API_BASE environment variable
-            const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3000'
-            const wsProtocol = API_BASE.startsWith('https') ? 'wss' : 'ws'
-            const wsHost = API_BASE.replace(/^https?:\/\//, '')
-            const wsUrl = `${wsProtocol}://${wsHost}/room/${roomCode}?playerId=${currentPlayerId}`
-            const websocket = new WebSocket(wsUrl)
+                case 'game_starting':
+                    console.log(`[LobbyScreen] ${currentPlayerId} received game_starting, navigating to game`)
+                    navigate('game')
+                    break
 
-            websocket.onopen = () => {
-                if (mountedRef.current) {
-                    setError('')
-                    reconnectAttempts = 0
-                }
-            }
+                case 'game_update':
+                case 'role_reveal':
+                case 'phase_change':
+                    console.log(`[LobbyScreen] ${currentPlayerId} received ${payload.type} - forwarding to GameScreen via window event`)
+                    break
 
-            websocket.onmessage = (event) => {
-                if (!mountedRef.current) return
-
-                const payload = JSON.parse(event.data)
-
-                switch (payload.type) {
-                    case 'keepalive':
-                        // Server sends keepalive every 30s to prevent Heroku H15 timeout
-                        // Send response back to create bidirectional traffic (Heroku may require this)
-                        if (websocket.readyState === WebSocket.OPEN) {
-                            websocket.send(JSON.stringify({ type: 'keepalive_ack' }));
-                        }
-                        break
-
-                    case 'lobby_update':
-                        setLobby(payload.lobby)
-                        break
-
-                    case 'game_starting':
-                        navigate(`/game/${roomCode}?playerId=${currentPlayerId}`)
-                        break
-
-                    case 'error':
-                        setError(payload.message)
-                        break
-                }
-            }
-
-            websocket.onerror = () => {
-                if (mountedRef.current) {
-                    console.error('WebSocket error occurred')
-                }
-            }
-
-            websocket.onclose = (event) => {
-                if (!mountedRef.current) return
-
-                // Don't reconnect if close was clean (user left intentionally)
-                if (event.code === 1000) return
-
-                // Attempt to reconnect if connection dropped unexpectedly
-                if (reconnectAttempts < maxReconnectAttempts) {
-                    reconnectAttempts++
-                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000)
-
-                    reconnectTimeoutRef.current = window.setTimeout(() => {
-                        if (mountedRef.current) {
-                            connect()
-                        }
-                    }, delay)
-                } else {
-                    setError('Connection lost. Please refresh the page.')
-                }
-            }
-
-            setWs(websocket)
-        }
-
-        connect()
-
-        return () => {
-            mountedRef.current = false
-            if (reconnectTimeoutRef.current) {
-                clearTimeout(reconnectTimeoutRef.current)
-            }
-            if (ws) {
-                ws.close(1000) // Clean close
+                case 'error':
+                    setError(payload.message)
+                    break
             }
         }
-    }, [roomCode, currentPlayerId])
+
+        window.addEventListener('room-message', handleMessage)
+        return () => window.removeEventListener('room-message', handleMessage)
+    }, [navigate, setError])
 
     const derivedHostId = useMemo(() => {
         const id = lobby?.hostId
@@ -180,7 +106,7 @@ export default function LobbyScreen() {
 
         ws.send(JSON.stringify({
             type: 'start_game',
-            roomId: roomCode,
+            roomId: roomId,
             playerId: currentPlayerId,
         }))
     }
@@ -189,7 +115,7 @@ export default function LobbyScreen() {
         if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
                 type: 'player_left',
-                roomId: roomCode,
+                roomId: roomId,
                 playerId: currentPlayerId,
             }))
         }
@@ -214,7 +140,7 @@ export default function LobbyScreen() {
             <div className="lobby-title-wrap">
                 <h1 className="lobby-title">Kitchen</h1>
                 <div className="room-code">
-                    {roomCode}
+                    {roomId}
                     <span className="rc-dot tl" />
                     <span className="rc-dot tr" />
                     <span className="rc-dot bl" />

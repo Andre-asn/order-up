@@ -82,6 +82,12 @@ export namespace gameModel {
             type: t.Literal('keepalive_ack'),
         }),
 
+        syncGame: t.Object({
+            type: t.Literal('sync_game'),
+            roomId: t.String(),
+            playerId: t.String(),
+        }),
+
         proposeChefs: t.Object({
             type: t.Literal('propose_chefs'),
             roomId: t.String(),

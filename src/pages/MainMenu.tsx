@@ -87,8 +87,8 @@ export default function MainMenu() {
         setError(null)
         const trimmed = hostName.trim()
         if (trimmed.length < 1 || trimmed.length > 10) {
-        setError('Name must be 1-10 characters')
-        return
+            setError('Name must be 1-10 characters')
+            return
         }
 
         setIsCreating(true)

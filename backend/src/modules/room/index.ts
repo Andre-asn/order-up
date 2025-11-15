@@ -12,26 +12,16 @@ const roomConnections = new Map<string, Map<string, any>>();
 // Must send actual JSON messages every 30s to prevent H15 timeout
 setInterval(() => {
 	const keepaliveMsg = JSON.stringify({ type: 'keepalive', ts: Date.now() });
-	let totalConnections = 0;
-	let sentCount = 0;
 
 	roomConnections.forEach((connections) => {
 		connections.forEach((ws) => {
-			totalConnections++;
 			try {
-				// Send DATA frame (Heroku counts this as activity, ping frames DON'T!)
 				ws.send(keepaliveMsg);
-				sentCount++;
 			} catch (error) {
-				// Connection might be closed, ignore
 			}
 		});
 	});
-
-	if (totalConnections > 0) {
-		console.log(`[Keepalive] Sent data frames to ${sentCount}/${totalConnections} connections`);
-	}
-}, 30000); // Every 30 seconds (well under 55s timeout)
+}, 30000);
 
 gameRoomService.setTimeoutBroadcastCallback((roomId: string, room: any) => {
     const connections = roomConnections.get(roomId);
@@ -208,6 +198,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
             lobbyModel.wsEvents.startGame,
 
             gameModel.wsEvents.keepaliveAck,
+            gameModel.wsEvents.syncGame,
             gameModel.wsEvents.proposeChefs,
             gameModel.wsEvents.skipProposal,
             gameModel.wsEvents.vote,
@@ -219,7 +210,10 @@ export const roomModule = new Elysia({ prefix: '/room' })
             const { roomId } = ws.data.params;
             const playerId = ws.data.query?.playerId;
             
+            console.log(`[Backend] WebSocket open for playerId: ${playerId}, roomId: ${roomId}`);
+            
             if (!playerId) {
+                console.log(`[Backend] ✗ No playerId provided, closing connection`);
                 ws.send(JSON.stringify({
                     type: 'error',
                     message: 'Player ID required',
@@ -235,13 +229,16 @@ export const roomModule = new Elysia({ prefix: '/room' })
                 try {
                     room = gameRoomService.getGameRoom(roomId);
                     isGame = true;
+                    console.log(`[Backend] Room ${roomId} is a game room`);
                 } catch {
                     room = lobbyService.getLobby(roomId);
                     isGame = false;
+                    console.log(`[Backend] Room ${roomId} is a lobby`);
                 }
                 
                 const player = room.players.find((p: any) => p.playerId === playerId);
                 if (!player) {
+                    console.log(`[Backend] ✗ Player ${playerId} not found in room ${roomId}`);
                     ws.send(JSON.stringify({
                         type: 'error',
                         message: 'Player not in room',
@@ -254,6 +251,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
                     roomConnections.set(roomId, new Map());
                 }
                 roomConnections.get(roomId)!.set(playerId, ws);
+                console.log(`[Backend] ✓ Registered connection for ${playerId} in room ${roomId}. Total connections: ${roomConnections.get(roomId)!.size}`);
                 
                 ws.data.query.playerId = playerId;
                 ws.subscribe(`room:${roomId}`);
@@ -263,6 +261,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
                     gameRoomService.cancelCleanup(roomId);
                     const gameRoom = room as gameModel.gameRoom;
                     
+                    console.log(`[Backend] Sending game state to ${playerId} on connect`);
                     ws.send(JSON.stringify({
                         type: 'game_update',
                         game: getClientGameState(gameRoom),
@@ -279,12 +278,14 @@ export const roomModule = new Elysia({ prefix: '/room' })
                         deadline: gameRoom.phaseDeadline,
                     }));
                 } else {
+                    console.log(`[Backend] Sending lobby state to ${playerId} on connect`);
                     ws.send(JSON.stringify({
                         type: 'lobby_update',
                         lobby: room,
                     }));
                 }
             } catch (error) {
+                console.error(`[Backend] ✗ Error in open handler for ${playerId}:`, error);
                 ws.send(JSON.stringify({
                     type: 'error',
                     message: error instanceof Error ? error.message : 'Failed to connect',
@@ -304,45 +305,82 @@ export const roomModule = new Elysia({ prefix: '/room' })
                         // No action needed, just acknowledge receipt
                         break;
 
+                    case 'sync_game': {
+                        console.log(`[Backend] sync_game requested by ${playerId} for roomId: ${roomId}`);
+                        try {
+                            const gameRoom = gameRoomService.getGameRoom(roomId);
+                            console.log(`[Backend] Game room found, sending state to ${playerId}`);
+
+                            ws.send(JSON.stringify({
+                                type: 'game_update',
+                                game: getClientGameState(gameRoom),
+                            }));
+                            console.log(`[Backend] ✓ Sent game_update to ${playerId}`);
+
+                            ws.send(JSON.stringify({
+                                type: 'role_reveal',
+                                ...getPlayerRoleInfo(gameRoom, playerId),
+                            }));
+                            console.log(`[Backend] ✓ Sent role_reveal to ${playerId}`);
+
+                            ws.send(JSON.stringify({
+                                type: 'phase_change',
+                                newPhase: gameRoom.currentPhase,
+                                deadline: gameRoom.phaseDeadline,
+                            }));
+                            console.log(`[Backend] ✓ Sent phase_change to ${playerId}`);
+                        } catch (error) {
+                            console.log(`[Backend] ✗ Game room not found for ${playerId}:`, error instanceof Error ? error.message : error);
+                        }
+                        break;
+                    }
+
                     case 'start_game': {
                         const lobby = lobbyService.getLobby(roomId);
                         lobbyService.validateGameStart(lobby, playerId);
-                        
+
                         const gameRoom = await gameRoomService.startGame(lobby);
-                        
                         const connections = roomConnections.get(roomId);
+
+                        console.log(`[Backend] start_game called by ${playerId}, roomId: ${roomId}`);
+                        console.log(`[Backend] Connections map size: ${connections?.size || 0}`);
                         if (connections) {
-                            connections.forEach((clientWs) => {
-                                clientWs.send(JSON.stringify({
-                                    type: 'game_starting',
-                                    roomId,
-                                }));
+                            console.log(`[Backend] Connected playerIds:`, Array.from(connections.keys()));
+                            connections.forEach((clientWs, connectedPlayerId) => {
+                                console.log(`[Backend] Sending messages to player ${connectedPlayerId}`);
+                                
+                                try {
+                                    clientWs.send(JSON.stringify({
+                                        type: 'game_starting',
+                                        roomId,
+                                    }));
+                                    console.log(`[Backend] ✓ Sent game_starting to ${connectedPlayerId}`);
 
-                                clientWs.send(JSON.stringify({
-                                    type: 'game_update',
-                                    game: getClientGameState(gameRoom),
-                                }));
+                                    clientWs.send(JSON.stringify({
+                                        type: 'game_update',
+                                        game: getClientGameState(gameRoom),
+                                    }));
+                                    console.log(`[Backend] ✓ Sent game_update to ${connectedPlayerId}`);
 
-                                const clientPlayerId = clientWs.data.query.playerId;
-                                clientWs.send(JSON.stringify({
-                                    type: 'role_reveal',
-                                    ...getPlayerRoleInfo(gameRoom, clientPlayerId),
-                                }));
+                                    clientWs.send(JSON.stringify({
+                                        type: 'role_reveal',
+                                        ...getPlayerRoleInfo(gameRoom, connectedPlayerId),
+                                    }));
+                                    console.log(`[Backend] ✓ Sent role_reveal to ${connectedPlayerId}`);
 
-                                clientWs.send(JSON.stringify({
-                                    type: 'phase_change',
-                                    newPhase: gameRoom.currentPhase,
-                                    deadline: gameRoom.phaseDeadline,
-                                }));
-
-                                clientWs.send(JSON.stringify({
-                                    type: 'proposal_started',
-                                    proponent: gameRoomService.getCurrentProponent(gameRoom),
-                                    deadline: gameRoom.phaseDeadline!,
-                                }));
+                                    clientWs.send(JSON.stringify({
+                                        type: 'phase_change',
+                                        newPhase: gameRoom.currentPhase,
+                                        deadline: gameRoom.phaseDeadline,
+                                    }));
+                                    console.log(`[Backend] ✓ Sent phase_change to ${connectedPlayerId}`);
+                                } catch (error) {
+                                    console.error(`[Backend] ✗ Error sending to ${connectedPlayerId}:`, error);
+                                }
                             });
+                        } else {
+                            console.log(`[Backend] ✗ No connections found for roomId: ${roomId}`);
                         }
-                        
                         break;
                     }
                     

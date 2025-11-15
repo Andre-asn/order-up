@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useMusic } from '../components/MusicContext'
+import { useRoomWebSocket } from '../contexts/RoomWebSocketContext'
 import '../styles/game.css'
 import a1 from '../assets/Untitled-1.gif'
 import a2 from '../assets/Untitled-2.gif'
@@ -67,15 +68,11 @@ function IconMusicOff({ size = 24, className = '' }: { size?: number; className?
 }
 
 export default function GameScreen() {
-    const { roomId } = useParams()
-    const [params] = useSearchParams()
     const navigate = useNavigate()
+    const { ws, error, setError, playerId: currentPlayerId, roomId } = useRoomWebSocket()
 
-    const [currentPlayerId] = useState(() => params.get('playerId') || localStorage.getItem('playerId') || '')
-    const [ws, setWs] = useState<WebSocket | null>(null)
     const [game, setGame] = useState<GameState | null>(null)
     const [role, setRole] = useState<RoleInfo | null>(null)
-    const [error, setError] = useState<string>('')
     const [selectedChefs, setSelectedChefs] = useState<string[]>([])
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
     const [showRoundResult, setShowRoundResult] = useState(false)
@@ -85,8 +82,6 @@ export default function GameScreen() {
     const [ingredientSent, setIngredientSent] = useState(false)
     const [proposalSent, setProposalSent] = useState(false)
 
-    const mountedRef = useRef(true)
-    const reconnectTimeoutRef = useRef<number | null>(null)
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
     const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -133,157 +128,120 @@ export default function GameScreen() {
 		}
 	}
 
+    // Listen for WebSocket messages - set up IMMEDIATELY to catch messages that arrive during navigation
     useEffect(() => {
-        if (!roomId || !currentPlayerId) {
-            setError('Missing room code or player ID')
-            return
-        }
+        const handleMessage = (event: Event) => {
+            const customEvent = event as CustomEvent
+            const payload = customEvent.detail
 
-        let reconnectAttempts = 0
-        const maxReconnectAttempts = 5
+            console.log(`[GameScreen] ${currentPlayerId} received message:`, payload.type)
 
-        const connect = () => {
-            // Get WebSocket URL from API_BASE environment variable
-            const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3000'
-            const wsProtocol = API_BASE.startsWith('https') ? 'wss' : 'ws'
-            const wsHost = API_BASE.replace(/^https?:\/\//, '')
-            const wsUrl = `${wsProtocol}://${wsHost}/room/${roomId}?playerId=${currentPlayerId}`
-            const websocket = new WebSocket(wsUrl)
+            switch (payload.type) {
+                case 'game_update':
+                    console.log(`[GameScreen] ${currentPlayerId} received game_update, setting game state`)
+                    setGame(payload.game)
+                    break
 
-            websocket.onopen = () => {
-                if (mountedRef.current) {
-                    setError('')
-                    reconnectAttempts = 0
-                }
-            }
+                case 'role_reveal':
+                    console.log(`[GameScreen] ${currentPlayerId} received role_reveal:`, payload.yourRole)
+                    setRole({
+                        yourRole: payload.yourRole,
+                        isHeadChef: payload.isHeadChef,
+                        isHiddenImpasta: payload.isHiddenImpasta || false,
+                        knownImpastas: payload.knownImpastas || []
+                    })
+                    break
 
-            websocket.onmessage = (event) => {
-                if (!mountedRef.current) return
-                const payload = JSON.parse(event.data)
-
-                switch (payload.type) {
-                    case 'keepalive':
-                        // Server sends keepalive every 30s to prevent Heroku H15 timeout
-                        // Send response back to create bidirectional traffic (Heroku may require this)
-                        if (websocket.readyState === WebSocket.OPEN) {
-                            websocket.send(JSON.stringify({ type: 'keepalive_ack' }));
-                        }
-                        break
-
-                    case 'game_update':
-                        setGame(payload.game)
-                        break
-
-                    case 'role_reveal':
-                        setRole({
-                            yourRole: payload.yourRole,
-                            isHeadChef: payload.isHeadChef,
-                            isHiddenImpasta: payload.isHiddenImpasta || false,
-                            knownImpastas: payload.knownImpastas || []
-                        })
-                        break
-
-                    case 'phase_change':
-                        if (payload.newPhase !== 'cooking') {
-                            setSelectedChefs([])
-                        }
-                        // Reset state when phase changes
-                        if (payload.newPhase !== 'voting') {
-                            setVoteSent(false)
-                        }
-                        if (payload.newPhase !== 'cooking') {
-                            setIngredientSent(false)
-                        }
-                        if (payload.newPhase !== 'proposing') {
-                            setProposalSent(false)
-                        }
-                        break
-
-                    case 'proposal_started':
+                case 'phase_change':
+                    console.log(`[GameScreen] ${currentPlayerId} received phase_change:`, payload.newPhase)
+                    if (payload.newPhase !== 'cooking') {
                         setSelectedChefs([])
+                    }
+                    if (payload.newPhase !== 'voting') {
                         setVoteSent(false)
+                    }
+                    if (payload.newPhase !== 'cooking') {
+                        setIngredientSent(false)
+                    }
+                    if (payload.newPhase !== 'proposing') {
                         setProposalSent(false)
-                        break
+                    }
+                    break
 
-                    case 'round_complete':
-                        setLastRoundResult({ success: payload.success, rottenCount: payload.rottenCount })
-                        setShowRoundResult(true)
-                        setTimeout(() => {
-                            setShowRoundResult(false)
-                        }, 4000)
-                        break
+                case 'proposal_started':
+                    setSelectedChefs([])
+                    setVoteSent(false)
+                    setProposalSent(false)
+                    break
 
-                    case 'game_over':
-                        websocket.close(1000)
+                case 'round_complete':
+                    setLastRoundResult({ success: payload.success, rottenCount: payload.rottenCount })
+                    setShowRoundResult(true)
+                    setTimeout(() => {
+                        setShowRoundResult(false)
+                    }, 4000)
+                    break
 
-                        const gameOverState = {
-                            winner: payload.winner,
-                            impastas: payload.impastas || [],
-                            headChef: payload.headChef || null,
-                            yourRole: role?.yourRole || 'chef',
-                            players: payload.players || [],
-                            roundSuccessful: payload.roundSuccessful || [],
-                            playerCount: payload.players?.length || 6,
-                            currentRound: payload.round || 1
-                        }
+                case 'game_over':
+                    const gameOverState = {
+                        winner: payload.winner,
+                        impastas: payload.impastas || [],
+                        headChef: payload.headChef || null,
+                        yourRole: role?.yourRole || 'chef',
+                        players: payload.players || [],
+                        roundSuccessful: payload.roundSuccessful || [],
+                        playerCount: payload.players?.length || 6,
+                        currentRound: payload.round || 1
+                    }
 
-                        navigate('/gameover', {
-                            state: gameOverState
-                        })
-                        break
+                    navigate('/gameover', {
+                        state: gameOverState
+                    })
+                    break
 
-                    case 'redemption_selected':
-                        setIsRedemptionImpasta(true)
-                        break
+                case 'redemption_selected':
+                    setIsRedemptionImpasta(true)
+                    break
 
-                    case 'error':
-                        setError(payload.message)
-                        break
-                }
-            }
-
-            websocket.onerror = () => {
-                if (mountedRef.current) {
-                    console.error('WebSocket error occurred')
-                }
-            }
-
-            websocket.onclose = (event) => {
-                if (!mountedRef.current) return
-
-                // Don't reconnect if close was clean (user left intentionally or game over)
-                if (event.code === 1000) return
-
-                // Attempt to reconnect if connection dropped unexpectedly
-                if (reconnectAttempts < maxReconnectAttempts) {
-                    reconnectAttempts++
-                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000)
-
-                    reconnectTimeoutRef.current = window.setTimeout(() => {
-                        if (mountedRef.current) {
-                            connect()
-                        }
-                    }, delay)
-                } else {
-                    setError('Connection lost. Please refresh the page.')
-                }
-            }
-
-            setWs(websocket)
-        }
-
-        connect()
-
-        return () => {
-            mountedRef.current = false
-            if (reconnectTimeoutRef.current) {
-                clearTimeout(reconnectTimeoutRef.current)
-            }
-            if (ws) {
-                ws.close(1000)
+                case 'error':
+                    setError(payload.message)
+                    break
             }
         }
-    }, [roomId, currentPlayerId])
+
+        window.addEventListener('room-message', handleMessage)
+        return () => window.removeEventListener('room-message', handleMessage)
+    }, [navigate, role, setError, currentPlayerId])
+
+    // Request initial game state when component mounts - always request, even if messages were already sent
+    useEffect(() => {
+        console.log(`[GameScreen] Component mounted for ${currentPlayerId}, ws:`, ws ? `readyState=${ws.readyState} (OPEN=1)` : 'null')
+        
+        let retryCount = 0
+        const maxRetries = 50
+        
+        const requestSync = () => {
+            if (retryCount >= maxRetries) {
+                console.log(`[GameScreen] ${currentPlayerId} max retries reached, giving up`)
+                return
+            }
+            
+            if (ws && ws.readyState === 1) {
+                console.log(`[GameScreen] ${currentPlayerId} sending sync_game request`)
+                ws.send(JSON.stringify({
+                    type: 'sync_game',
+                    roomId: roomId,
+                    playerId: currentPlayerId,
+                }))
+            } else {
+                retryCount++
+                console.log(`[GameScreen] ${currentPlayerId} ws not ready (readyState=${ws?.readyState}), retry ${retryCount}/${maxRetries}...`)
+                setTimeout(requestSync, 100)
+            }
+        }
+        
+        requestSync()
+    }, [ws, roomId, currentPlayerId])
 
     useEffect(() => {
         if (!game?.phaseDeadline) {
@@ -421,6 +379,10 @@ export default function GameScreen() {
             </div>
         )
     }
+
+    useEffect(() => {
+        console.log(`[GameScreen] ${currentPlayerId} state check - game:`, game ? 'set' : 'null', 'role:', role ? 'set' : 'null')
+    }, [game, role, currentPlayerId])
 
     if (!game || !role) {
         return (
