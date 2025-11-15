@@ -162,6 +162,14 @@ export default function GameScreen() {
                 const payload = JSON.parse(event.data)
 
                 switch (payload.type) {
+                    case 'keepalive':
+                        // Server sends keepalive every 30s to prevent Heroku H15 timeout
+                        // Send response back to create bidirectional traffic (Heroku may require this)
+                        if (websocket.readyState === WebSocket.OPEN) {
+                            websocket.send(JSON.stringify({ type: 'keepalive_ack' }));
+                        }
+                        break
+
                     case 'game_update':
                         setGame(payload.game)
                         break

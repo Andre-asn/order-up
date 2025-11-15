@@ -7,31 +7,29 @@ import { gameRoomService } from './game/service';
 const roomConnections = new Map<string, Map<string, any>>();
 
 // Server-side keepalive to prevent Heroku idle timeout (55s)
-// Send WebSocket ping frames every 30 seconds (Heroku docs recommend "ping packets")
-// Ping frames are protocol-level and counted as activity by Heroku's router
+// CRITICAL: Heroku router only counts DATA frames (not control frames like ping/pong)
+// The "bytes=0" in router logs proves ping frames don't count as activity
+// Must send actual JSON messages every 30s to prevent H15 timeout
 setInterval(() => {
+	const keepaliveMsg = JSON.stringify({ type: 'keepalive', ts: Date.now() });
 	let totalConnections = 0;
-	let activePings = 0;
+	let sentCount = 0;
 
 	roomConnections.forEach((connections) => {
 		connections.forEach((ws) => {
 			totalConnections++;
 			try {
-				// Send native WebSocket ping frame (not JSON message)
-				// This is what Heroku's router recognizes as keepalive activity
-				if (typeof ws.ping === 'function') {
-					ws.ping();
-					activePings++;
-				}
+				// Send DATA frame (Heroku counts this as activity, ping frames DON'T!)
+				ws.send(keepaliveMsg);
+				sentCount++;
 			} catch (error) {
 				// Connection might be closed, ignore
-				console.error('[Keepalive] Failed to ping:', error);
 			}
 		});
 	});
 
 	if (totalConnections > 0) {
-		console.log(`[Keepalive] Sent ${activePings}/${totalConnections} ping frames`);
+		console.log(`[Keepalive] Sent data frames to ${sentCount}/${totalConnections} connections`);
 	}
 }, 30000); // Every 30 seconds (well under 55s timeout)
 
