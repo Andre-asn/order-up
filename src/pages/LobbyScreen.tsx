@@ -118,8 +118,14 @@ export default function LobbyScreen() {
                 roomId: roomId,
                 playerId: currentPlayerId,
             }))
+
+            // Give the message time to be sent before closing the connection
+            setTimeout(() => {
+                navigate('/')
+            }, 100)
+        } else {
+            navigate('/')
         }
-        navigate('/')
     }
 
     return (
