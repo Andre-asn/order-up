@@ -7,34 +7,33 @@ import { gameRoomService } from './game/service';
 const roomConnections = new Map<string, Map<string, any>>();
 
 // Server-side keepalive to prevent Heroku idle timeout (55s)
-// Send keepalive every 20 seconds to all active connections (well under 55s limit)
+// Send WebSocket ping frames every 30 seconds (Heroku docs recommend "ping packets")
+// Ping frames are protocol-level and counted as activity by Heroku's router
 setInterval(() => {
-	const keepaliveMessage = JSON.stringify({ type: 'keepalive', timestamp: Date.now() });
 	let totalConnections = 0;
-	let activeConnections = 0;
-	
+	let activePings = 0;
+
 	roomConnections.forEach((connections) => {
 		connections.forEach((ws) => {
 			totalConnections++;
 			try {
-				// Try native ping first (if available), fallback to JSON message
+				// Send native WebSocket ping frame (not JSON message)
+				// This is what Heroku's router recognizes as keepalive activity
 				if (typeof ws.ping === 'function') {
 					ws.ping();
-					activeConnections++;
-				} else {
-					ws.send(keepaliveMessage);
-					activeConnections++;
+					activePings++;
 				}
 			} catch (error) {
 				// Connection might be closed, ignore
+				console.error('[Keepalive] Failed to ping:', error);
 			}
 		});
 	});
-	
+
 	if (totalConnections > 0) {
-		console.log(`[Keepalive] Sent to ${activeConnections}/${totalConnections} connections`);
+		console.log(`[Keepalive] Sent ${activePings}/${totalConnections} ping frames`);
 	}
-}, 20000); // Every 20 seconds
+}, 30000); // Every 30 seconds (well under 55s timeout)
 
 gameRoomService.setTimeoutBroadcastCallback((roomId: string, room: any) => {
     const connections = roomConnections.get(roomId);
@@ -215,8 +214,6 @@ export const roomModule = new Elysia({ prefix: '/room' })
             gameModel.wsEvents.vote,
             gameModel.wsEvents.selectIngredient,
             gameModel.wsEvents.killChef,
-
-            t.Object({ type: t.Literal('ping') }),
         ]),
 
         open(ws) {
@@ -302,18 +299,6 @@ export const roomModule = new Elysia({ prefix: '/room' })
             const playerId = ws.data.query.playerId;
 
             try {
-                // Handle heartbeat ping - respond with pong to keep connection alive
-                if (message.type === 'ping') {
-                    console.log(`[Heartbeat] Received ping from player ${playerId} in room ${roomId}`);
-                    try {
-                        ws.send(JSON.stringify({ type: 'pong' }));
-                        console.log(`[Heartbeat] Sent pong to player ${playerId} in room ${roomId}`);
-                    } catch (error) {
-                        console.error(`[Heartbeat] Failed to send pong to player ${playerId}:`, error);
-                    }
-                    return;
-                }
-
                 switch (message.type) {
                     case 'start_game': {
                         const lobby = lobbyService.getLobby(roomId);

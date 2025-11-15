@@ -112,18 +112,6 @@ export namespace gameModel {
             targetChefId: t.String(),
         }),
 
-        ping: t.Object({
-            type: t.Literal('ping'),
-        }),
-
-        pong: t.Object({
-            type: t.Literal('pong'),
-        }),
-
-        keepalive: t.Object({
-            type: t.Literal('keepalive'),
-        }),
-
         gameUpdate: t.Object({
             type: t.Literal('game_update'),
             game: t.Any(),

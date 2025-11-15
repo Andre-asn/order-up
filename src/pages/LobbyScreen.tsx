@@ -45,7 +45,6 @@ export default function LobbyScreen() {
     const [error, setError] = useState<string>('')
     const mountedRef = useRef(true)
     const reconnectTimeoutRef = useRef<number | null>(null)
-    const heartbeatIntervalRef = useRef<number | null>(null)
 
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
@@ -70,19 +69,6 @@ export default function LobbyScreen() {
                 if (mountedRef.current) {
                     setError('')
                     reconnectAttempts = 0
-
-                    // Send immediate ping on connection
-                    console.log('[Heartbeat] Connection opened, sending initial ping')
-                    websocket.send(JSON.stringify({ type: 'ping' }))
-
-                    // Start heartbeat to prevent Heroku idle timeout (55s)
-                    // Send every 20 seconds to be safe (well under 55s limit)
-                    heartbeatIntervalRef.current = window.setInterval(() => {
-                        if (websocket.readyState === WebSocket.OPEN) {
-                            console.log('[Heartbeat] Sending ping')
-                            websocket.send(JSON.stringify({ type: 'ping' }))
-                        }
-                    }, 20000) // Send ping every 20 seconds
                 }
             }
 
@@ -92,14 +78,6 @@ export default function LobbyScreen() {
                 const payload = JSON.parse(event.data)
 
                 switch (payload.type) {
-                    case 'pong':
-                        console.log('[Heartbeat] Received pong from server')
-                        break
-
-                    case 'keepalive':
-                        // Server-initiated keepalive to prevent Heroku timeout
-                        break
-
                     case 'lobby_update':
                         setLobby(payload.lobby)
                         break
@@ -122,12 +100,6 @@ export default function LobbyScreen() {
 
             websocket.onclose = (event) => {
                 if (!mountedRef.current) return
-
-                // Clear heartbeat interval
-                if (heartbeatIntervalRef.current) {
-                    clearInterval(heartbeatIntervalRef.current)
-                    heartbeatIntervalRef.current = null
-                }
 
                 // Don't reconnect if close was clean (user left intentionally)
                 if (event.code === 1000) return
@@ -156,9 +128,6 @@ export default function LobbyScreen() {
             mountedRef.current = false
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current)
-            }
-            if (heartbeatIntervalRef.current) {
-                clearInterval(heartbeatIntervalRef.current)
             }
             if (ws) {
                 ws.close(1000) // Clean close
