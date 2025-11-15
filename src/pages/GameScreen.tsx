@@ -156,6 +156,7 @@ export default function GameScreen() {
                     // Start heartbeat to prevent Heroku idle timeout (55s)
                     heartbeatIntervalRef.current = window.setInterval(() => {
                         if (websocket.readyState === WebSocket.OPEN) {
+                            console.log('[Heartbeat] Sending ping')
                             websocket.send(JSON.stringify({ type: 'ping' }))
                         }
                     }, 30000) // Send ping every 30 seconds
