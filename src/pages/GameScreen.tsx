@@ -81,6 +81,9 @@ export default function GameScreen() {
     const [showRoundResult, setShowRoundResult] = useState(false)
     const [lastRoundResult, setLastRoundResult] = useState<{ success: boolean, rottenCount: number } | null>(null)
     const [isRedemptionImpasta, setIsRedemptionImpasta] = useState(false)
+    const [voteSent, setVoteSent] = useState(false)
+    const [ingredientSent, setIngredientSent] = useState(false)
+    const [proposalSent, setProposalSent] = useState(false)
 
     const mountedRef = useRef(true)
     const reconnectTimeoutRef = useRef<number | null>(null)
@@ -185,10 +188,22 @@ export default function GameScreen() {
                         if (payload.newPhase !== 'cooking') {
                             setSelectedChefs([])
                         }
+                        // Reset state when phase changes
+                        if (payload.newPhase !== 'voting') {
+                            setVoteSent(false)
+                        }
+                        if (payload.newPhase !== 'cooking') {
+                            setIngredientSent(false)
+                        }
+                        if (payload.newPhase !== 'proposing') {
+                            setProposalSent(false)
+                        }
                         break
 
                     case 'proposal_started':
                         setSelectedChefs([])
+                        setVoteSent(false)
+                        setProposalSent(false)
                         break
 
                     case 'round_complete':
@@ -311,8 +326,8 @@ export default function GameScreen() {
 
     const hasVoted = useMemo(() => {
         if (!currentProposal) return false
-        return currentProposal.votes.some(v => v.playerId === currentPlayerId)
-    }, [currentProposal, currentPlayerId])
+        return voteSent || currentProposal.votes.some(v => v.playerId === currentPlayerId)
+    }, [currentProposal, currentPlayerId, voteSent])
 
     const isSelectedChef = useMemo(() => {
         if (!currentProposal) return false
@@ -321,11 +336,14 @@ export default function GameScreen() {
 
     const hasSelectedIngredient = useMemo(() => {
         if (!game) return false
-        return game.ingredientSelections.some(s => s.playerId === currentPlayerId)
-    }, [game, currentPlayerId])
+        return ingredientSent || game.ingredientSelections.some(s => s.playerId === currentPlayerId)
+    }, [game, currentPlayerId, ingredientSent])
 
     const handleProposeChefs = () => {
         if (!ws || !roomId || selectedChefs.length === 0 || ws.readyState !== WebSocket.OPEN) return
+
+        // Optimistically mark as proposed to prevent double-click
+        setProposalSent(true)
 
         ws.send(JSON.stringify({
             type: 'propose_chefs',
@@ -338,6 +356,9 @@ export default function GameScreen() {
     const handleSkipProposal = () => {
         if (!ws || !roomId || ws.readyState !== WebSocket.OPEN) return
 
+        // Optimistically mark as proposed to prevent double-click
+        setProposalSent(true)
+
         ws.send(JSON.stringify({
             type: 'skip_proposal',
             roomId,
@@ -347,6 +368,9 @@ export default function GameScreen() {
 
     const handleVote = (inFavor: boolean) => {
         if (!ws || !roomId || ws.readyState !== WebSocket.OPEN) return
+
+        // Optimistically mark as voted to prevent double-click
+        setVoteSent(true)
 
         ws.send(JSON.stringify({
             type: 'vote',
@@ -358,6 +382,9 @@ export default function GameScreen() {
 
     const handleSelectIngredient = (ingredient: 'healthy' | 'rotten') => {
         if (!ws || !roomId || ws.readyState !== WebSocket.OPEN) return
+
+        // Optimistically mark as selected to prevent double-click
+        setIngredientSent(true)
 
         ws.send(JSON.stringify({
             type: 'select_ingredient',
@@ -473,6 +500,7 @@ export default function GameScreen() {
                         chefAvatars={chefAvatars}
                         knownImpastas={role.knownImpastas}
                         role={role}
+                        proposalSent={proposalSent}
                     />
                 )}
 
@@ -564,7 +592,7 @@ function RoundTracker({ rounds, currentRound, playerCount }: { rounds: [boolean,
     )
 }
 
-function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onPropose, onSkip, currentPlayerId, chefAvatars, knownImpastas, role }: any) {
+function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onPropose, onSkip, currentPlayerId, chefAvatars, knownImpastas, role, proposalSent }: any) {
     const requiredChefs: number = getRequiredChefsForRound(game.round, game.players.length)
     const currentProponent: string = game.proponentOrder[game.currentProponentIndex]
     const proponentName: string = game.players.find((p: Player) => p.playerId === currentProponent)?.name
@@ -606,11 +634,11 @@ function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onProp
                     <button
                         className="game-btn btn-primary"
                         onClick={onPropose}
-                        disabled={selectedChefs.length !== requiredChefs}
+                        disabled={selectedChefs.length !== requiredChefs || proposalSent}
                     >
                         Propose Team ({selectedChefs.length}/{requiredChefs})
                     </button>
-                    <button className="game-btn btn-secondary" onClick={onSkip}>
+                    <button className="game-btn btn-secondary" onClick={onSkip} disabled={proposalSent}>
                         Skip Turn
                     </button>
                 </div>
