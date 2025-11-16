@@ -205,6 +205,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
     .ws('/:roomId', {
         body: t.Union([
             lobbyModel.wsEvents.startGame,
+            lobbyModel.wsEvents.playerLeft,
 
             gameModel.wsEvents.keepaliveAck,
             gameModel.wsEvents.syncGame,
@@ -353,6 +354,30 @@ export const roomModule = new Elysia({ prefix: '/room' })
                         } catch (error) {
                             console.log(`[Backend] ✗ Game room not found for ${playerId}:`, error instanceof Error ? error.message : error);
                         }
+                        break;
+                    }
+
+                    case 'player_left': {
+                        console.log(`[Backend] player_left received from ${playerId} in room ${roomId}`);
+
+                        // Remove player from lobby
+                        try {
+                            const lobby = lobbyService.removePlayer(roomId, playerId);
+
+                            // Broadcast updated lobby to remaining players
+                            if (lobby) {
+                                broadcastToRoom(roomId, {
+                                    type: 'lobby_update',
+                                    lobby,
+                                });
+                            }
+                        } catch (error) {
+                            console.log(`[Backend] Could not remove player from lobby (may not exist):`, error instanceof Error ? error.message : error);
+                        }
+
+                        // Close the WebSocket connection
+                        ws.close(1000, 'Player left');
+                        console.log(`[Backend] ✓ Closed connection for ${playerId}`);
                         break;
                     }
 

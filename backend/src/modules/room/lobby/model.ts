@@ -108,6 +108,7 @@ export namespace lobbyModel {
         
         playerLeft: t.Object({
             type: t.Literal('player_left'),
+            roomId: t.String(),
             playerId: t.String(),
         }),
         
