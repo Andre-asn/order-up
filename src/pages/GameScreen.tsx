@@ -85,7 +85,10 @@ export default function GameScreen() {
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
 
     const audioRef = useRef<HTMLAudioElement | null>(null)
-    const [isMusicPlaying, setIsMusicPlaying] = useState(true)
+    const [isMusicPlaying, setIsMusicPlaying] = useState(() => {
+		const savedMusicPreference = localStorage.getItem('musicEnabled')
+		return savedMusicPreference !== null ? savedMusicPreference === 'true' : true
+	})
     const { isMusicPlaying: isBackgroundMusicPlaying, toggleMusic: toggleBackgroundMusic } = useMusic()
 
     useEffect(() => {
@@ -100,7 +103,8 @@ export default function GameScreen() {
 			audioRef.current.play().catch(() => {
 				setIsMusicPlaying(false)
 			})
-			setIsMusicPlaying(true)
+		} else {
+			setIsMusicPlaying(false)
 		}
 
 		return () => {
@@ -420,8 +424,6 @@ export default function GameScreen() {
                 )}
             </div>
 
-            <RoundTracker rounds={game.roundSuccessful} currentRound={game.round} playerCount={game.players.length} />
-
             {showRoundResult && lastRoundResult && (
                 <div className="round-result-popup">
                     <div className={`round-result ${lastRoundResult.success ? 'success' : 'failure'}`}>
@@ -551,12 +553,17 @@ function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onProp
 
     return (
         <div className="phase-container">
-            <div className="phase-title">
-                {isProponent ? (
-                    <>🍲 Select {requiredChefs} chefs to cook</>
-                ) : (
-                    <><strong>{proponentName}</strong> is proposing <strong>{requiredChefs}</strong> chefs for this shift.</>
-                )}
+            <div className="phase-title-with-rounds">
+                <div className="phase-title-text">
+                    {isProponent ? (
+                        <>🍲 Select {requiredChefs} chefs to cook</>
+                    ) : (
+                        <><strong>{proponentName}</strong> is proposing <strong>{requiredChefs}</strong> chefs for this shift.</>
+                    )}
+                </div>
+                <div className="phase-rounds">
+                    <RoundTracker rounds={game.roundSuccessful} currentRound={game.round} playerCount={game.players.length} />
+                </div>
             </div>
 
             <div className="players-selection-grid">
@@ -581,37 +588,41 @@ function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onProp
                 })}
             </div>
 
-            {isProponent && (
+            <div className="bottom-controls">
+                <div className="rejection-counter">
+                    <div className="rejection-label">Burn Rate: {game.rejectionCount}/5</div>
+                    <div className="rejection-bar">
+                        {game.rejectionCount >= 4 && (
+                            <div className="rejection-stop-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 7C12.4142 7 12.75 7.33579 12.75 7.75V12.25C12.75 12.6642 12.4142 13 12 13C11.5858 13 11.25 12.6642 11.25 12.25V7.75C11.25 7.33579 11.5858 7 12 7Z" fill="currentColor"/>
+                                    <path d="M12 17C12.5523 17 13 16.5523 13 16C13 15.4477 12.5523 15 12 15C11.4477 15 11 15.4477 11 16C11 16.5523 11.4477 17 12 17Z" fill="currentColor"/>
+                                    <path fillRule="evenodd" clipRule="evenodd" d="M7.32754 1.46967C7.46819 1.32902 7.65895 1.25 7.85786 1.25H16.1421C16.341 1.25 16.5318 1.32902 16.6725 1.46967L22.5303 7.32754C22.671 7.46819 22.75 7.65895 22.75 7.85786V16.1421C22.75 16.341 22.671 16.5318 22.5303 16.6725L16.6725 22.5303C16.5318 22.671 16.341 22.75 16.1421 22.75H7.85786C7.65895 22.75 7.46819 22.671 7.32753 22.5303L1.46967 16.6725C1.32902 16.5318 1.25 16.341 1.25 16.1421V7.85786C1.25 7.65895 1.32902 7.46819 1.46967 7.32754L7.32754 1.46967ZM8.16853 2.75L2.75 8.16853L2.75 15.8315L8.16852 21.25H15.8315L21.25 15.8315V8.16852L15.8315 2.75L8.16853 2.75Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        )}
+                        <div
+                            className="rejection-fill"
+                            style={{ width: `${(game.rejectionCount / 5) * 100}%` }}
+                        />
+                    </div>
+                </div>
+
                 <div className="action-buttons">
                     <button
                         className="game-btn btn-primary"
                         onClick={onPropose}
-                        disabled={selectedChefs.length !== requiredChefs || proposalSent}
+                        disabled={!isProponent || selectedChefs.length !== requiredChefs || proposalSent}
                     >
                         Propose Team ({selectedChefs.length}/{requiredChefs})
                     </button>
-                    <button className="game-btn btn-secondary" onClick={onSkip} disabled={proposalSent}>
+                    <button
+                        className="game-btn btn-secondary"
+                        onClick={onSkip}
+                        disabled={!isProponent || proposalSent}
+                    >
                         Skip Turn
                     </button>
-                </div>
-            )}
-
-            <div className="rejection-counter">
-                <div className="rejection-label">Burn Rate: {game.rejectionCount}/5</div>
-                <div className="rejection-bar">
-                    {game.rejectionCount >= 4 && (
-                        <div className="rejection-stop-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 7C12.4142 7 12.75 7.33579 12.75 7.75V12.25C12.75 12.6642 12.4142 13 12 13C11.5858 13 11.25 12.6642 11.25 12.25V7.75C11.25 7.33579 11.5858 7 12 7Z" fill="currentColor"/>
-                                <path d="M12 17C12.5523 17 13 16.5523 13 16C13 15.4477 12.5523 15 12 15C11.4477 15 11 15.4477 11 16C11 16.5523 11.4477 17 12 17Z" fill="currentColor"/>
-                                <path fillRule="evenodd" clipRule="evenodd" d="M7.32754 1.46967C7.46819 1.32902 7.65895 1.25 7.85786 1.25H16.1421C16.341 1.25 16.5318 1.32902 16.6725 1.46967L22.5303 7.32754C22.671 7.46819 22.75 7.65895 22.75 7.85786V16.1421C22.75 16.341 22.671 16.5318 22.5303 16.6725L16.6725 22.5303C16.5318 22.671 16.341 22.75 16.1421 22.75H7.85786C7.65895 22.75 7.46819 22.671 7.32753 22.5303L1.46967 16.6725C1.32902 16.5318 1.25 16.341 1.25 16.1421V7.85786C1.25 7.65895 1.32902 7.46819 1.46967 7.32754L7.32754 1.46967ZM8.16853 2.75L2.75 8.16853L2.75 15.8315L8.16852 21.25H15.8315L21.25 15.8315V8.16852L15.8315 2.75L8.16853 2.75Z" fill="currentColor"/>
-                            </svg>
-                        </div>
-                    )}
-                    <div 
-                        className="rejection-fill" 
-                        style={{ width: `${(game.rejectionCount / 5) * 100}%` }}
-                    />
                 </div>
             </div>
         </div>

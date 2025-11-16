@@ -50,6 +50,15 @@
   z-index: 1;
 }
 
+/* Desktop: 2 rows of 4 squares */
+@media (min-width: 769px) {
+  .players-grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 1000px;
+    gap: 20px;
+  }
+}
+
 .player-card {
   background: white;
   border: 3px solid black;

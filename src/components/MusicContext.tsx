@@ -10,7 +10,10 @@ interface MusicContextType {
 const MusicContext = createContext<MusicContextType | undefined>(undefined)
 
 export function MusicProvider({ children }: { children: ReactNode }) {
-	const [isMusicPlaying, setIsMusicPlaying] = useState(true)
+	const [isMusicPlaying, setIsMusicPlaying] = useState(() => {
+		const savedMusicPreference = localStorage.getItem('musicEnabled')
+		return savedMusicPreference !== null ? savedMusicPreference === 'true' : true
+	})
 	const audioRef = useRef<HTMLAudioElement | null>(null)
 
 	useEffect(() => {
@@ -25,7 +28,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 			audioRef.current.play().catch(() => {
 				setIsMusicPlaying(false)
 			})
-			setIsMusicPlaying(true)
+		} else {
+			setIsMusicPlaying(false)
 		}
 
 		return () => {
