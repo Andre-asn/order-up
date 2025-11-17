@@ -583,8 +583,8 @@ function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onProp
                             <div 
                                 className={`player-name ${isKnownImpasta || isYouAndImpasta ? 'impasta-name' : ''}`}
                                 style={{
-                                    fontSize: player.name.length > 8 
-                                        ? `${Math.max(16, 25 - (player.name.length - 8) * 1.2)}px` 
+                                    fontSize: player.name.length > 4 
+                                        ? `${Math.max(16, 25 - (player.name.length - 4) * 1.2)}px` 
                                         : undefined
                                 }}
                             >
@@ -663,8 +663,8 @@ function VotingPhase({ game, proposal, hasVoted, onVote, currentPlayerId, chefAv
                                         <div 
                                             className={`chef-name ${isKnownImpasta || isYouAndImpasta ? 'impasta-name' : ''}`}
                                             style={{
-                                                fontSize: chef.name.length > 8 
-                                                    ? `${Math.max(18, 32 - (chef.name.length - 8) * 1.5)}px` 
+                                                fontSize: chef.name.length > 4 
+                                                    ? `${Math.max(18, 32 - (chef.name.length - 4) * 1.5)}px` 
                                                     : undefined
                                             }}
                                         >
@@ -705,8 +705,8 @@ function VotingPhase({ game, proposal, hasVoted, onVote, currentPlayerId, chefAv
                                     <span 
                                         className="vote-player"
                                         style={{
-                                            fontSize: player.name.length > 8 
-                                                ? `${Math.max(12, 16 - (player.name.length - 8) * 0.5)}px` 
+                                            fontSize: player.name.length > 4 
+                                                ? `${Math.max(12, 16 - (player.name.length - 4) * 0.5)}px` 
                                                 : undefined
                                         }}
                                     >
@@ -873,8 +873,8 @@ function ProponentOrderPanel({ game, currentProponentIndex }: { game: GameState,
                             <span 
                                 className="proponent-name"
                                 style={{
-                                    fontSize: player?.name && player.name.length > 8 
-                                        ? `${Math.max(12, 16 - (player.name.length - 8) * 0.5)}px` 
+                                    fontSize: player?.name && player.name.length > 4 
+                                        ? `${Math.max(12, 16 - (player.name.length - 4) * 0.5)}px` 
                                         : undefined
                                 }}
                             >

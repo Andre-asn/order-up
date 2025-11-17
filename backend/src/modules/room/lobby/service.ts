@@ -113,9 +113,9 @@ export class lobbyService {
 }
 
 function generateRoomCode(): string {
-    let roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    let roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
     while (lobbies.has(roomCode)) {
-        roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
     }
     return roomCode;
 }

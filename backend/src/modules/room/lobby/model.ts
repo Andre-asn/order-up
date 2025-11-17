@@ -4,7 +4,7 @@ export namespace lobbyModel {
 
     export const player = t.Object({
         playerId: t.String(),
-        name: t.String({ minLength: 1, maxLength: 10 }),
+        name: t.String({ minLength: 1, maxLength: 6 }),
         isHost: t.Boolean(),
     })
 
@@ -52,8 +52,8 @@ export namespace lobbyModel {
         body: t.Object({
         hostName: t.String({
             minLength: 1,
-            maxLength: 10,
-            error: 'Host name must be 1-10 characters long'
+            maxLength: 6,
+            error: 'Host name must be 1-6 characters long'
         }),
         gamemode: t.Union([
             t.Literal('classic'),
@@ -76,7 +76,7 @@ export namespace lobbyModel {
     export const joinLobby = {
         body: t.Object({
             roomId: t.String(),
-            name: t.String({ minLength: 1, maxLength: 10 }),
+            name: t.String({ minLength: 1, maxLength: 6 }),
         }),
         response: {
             200: joinLobbySuccess,

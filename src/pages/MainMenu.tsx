@@ -86,8 +86,8 @@ export default function MainMenu() {
 
         setError(null)
         const trimmed = hostName.trim()
-        if (trimmed.length < 1 || trimmed.length > 10) {
-            setError('Name must be 1-10 characters')
+        if (trimmed.length < 1 || trimmed.length > 6) {
+            setError('Name must be 1-6 characters')
             return
         }
 
@@ -131,8 +131,8 @@ export default function MainMenu() {
         setJoinError(null)
         const name = joinName.trim()
         const room = joinRoom.trim().toUpperCase()
-        if (name.length < 1 || name.length > 10) {
-        setJoinError('Name must be 1-10 characters')
+        if (name.length < 1 || name.length > 6) {
+        setJoinError('Name must be 1-6 characters')
         return
         }
         if (!room) {
@@ -237,12 +237,12 @@ export default function MainMenu() {
         <div className="modal-backdrop" onClick={() => setShowCreate(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">Create Game</h2>
-            <label className="modal-label">Your Name (1-10)</label>
+            <label className="modal-label">Your Name (1-6)</label>
             <input
               className="modal-input"
               value={hostName}
               onChange={(e) => setHostName(e.target.value)}
-              maxLength={10}
+              maxLength={6}
               placeholder="Chef Name"
             />
             <label className="modal-label">Gamemode</label>
@@ -265,12 +265,12 @@ export default function MainMenu() {
         <div className="modal-backdrop" onClick={() => setShowJoin(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">Join Game</h2>
-            <label className="modal-label">Your Name (1-10)</label>
+            <label className="modal-label">Your Name (1-6)</label>
             <input
               className="modal-input"
               value={joinName}
               onChange={(e) => setJoinName(e.target.value)}
-              maxLength={10}
+              maxLength={6}
               placeholder="Chef Name"
             />
             <label className="modal-label">Room Code</label>
@@ -278,7 +278,8 @@ export default function MainMenu() {
               className="modal-input"
               value={joinRoom}
               onChange={(e) => setJoinRoom(e.target.value.toUpperCase())}
-              placeholder="e.g. 5MJ7J0"
+              placeholder="e.g. 5MJ7J"
+              maxLength={5}
             />
             {joinError && <div className="modal-error">{joinError}</div>}
             <div className="modal-actions">
