@@ -155,7 +155,10 @@ export default function LobbyScreen() {
             </div>
 
             {lobby?.gamemode && (
-                <div className="lobby-corner right">Mode: {lobby.gamemode.toUpperCase()}</div>
+                <div className="lobby-corner right">
+                    <span>Mode:</span>
+                    <span>{lobby.gamemode.toUpperCase()}</span>
+                </div>
             )}
 
             <div className="players-grid">
@@ -183,7 +186,14 @@ export default function LobbyScreen() {
                                     />
                                 )}
                             </div>
-                            <div className={"player-name" + (player.isEmpty ? ' empty' : '')}>
+                            <div 
+                                className={"player-name" + (player.isEmpty ? ' empty' : '')}
+                                style={{
+                                    fontSize: player.name.length > 8 
+                                        ? `${Math.max(9, 13 - (player.name.length - 8) * 0.8)}px` 
+                                        : '13px'
+                                }}
+                            >
                                 {player.name}
                             </div>
                             {player.isHost && !player.isEmpty && (

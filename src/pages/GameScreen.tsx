@@ -580,7 +580,14 @@ function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onProp
                             onClick={() => isProponent && onToggleChef(player.playerId)}
                         >
                             <img src={chefAvatars[index % 8]} alt={player.name} className="player-avatar" />
-                            <div className={`player-name ${isKnownImpasta || isYouAndImpasta ? 'impasta-name' : ''}`}>
+                            <div 
+                                className={`player-name ${isKnownImpasta || isYouAndImpasta ? 'impasta-name' : ''}`}
+                                style={{
+                                    fontSize: player.name.length > 8 
+                                        ? `${Math.max(16, 25 - (player.name.length - 8) * 1.2)}px` 
+                                        : undefined
+                                }}
+                            >
                                 {player.name}
                             </div>
                         </div>
@@ -653,7 +660,14 @@ function VotingPhase({ game, proposal, hasVoted, onVote, currentPlayerId, chefAv
                                 return (
                                     <div key={chefId} className="proposed-chef">
                                         <img src={chefAvatars[index % 8]} alt={chef.name} className="chef-avatar" />
-                                        <div className={`chef-name ${isKnownImpasta || isYouAndImpasta ? 'impasta-name' : ''}`}>
+                                        <div 
+                                            className={`chef-name ${isKnownImpasta || isYouAndImpasta ? 'impasta-name' : ''}`}
+                                            style={{
+                                                fontSize: chef.name.length > 8 
+                                                    ? `${Math.max(18, 32 - (chef.name.length - 8) * 1.5)}px` 
+                                                    : undefined
+                                            }}
+                                        >
                                             {chef.name}
                                         </div>
                                     </div>
@@ -671,7 +685,16 @@ function VotingPhase({ game, proposal, hasVoted, onVote, currentPlayerId, chefAv
                             if (!vote) {
                                 return (
                                     <div key={player.playerId} className="vote-item pending">
-                                        <span className="vote-player">{player.name}</span>
+                                        <span 
+                                            className="vote-player"
+                                            style={{
+                                                fontSize: player.name.length > 8 
+                                                    ? `${Math.max(12, 16 - (player.name.length - 8) * 0.5)}px` 
+                                                    : undefined
+                                            }}
+                                        >
+                                            {player.name}
+                                        </span>
                                         <span className="vote-choice">-</span>
                                     </div>
                                 )
@@ -679,7 +702,16 @@ function VotingPhase({ game, proposal, hasVoted, onVote, currentPlayerId, chefAv
 
                             return (
                                 <div key={player.playerId} className={`vote-item ${vote.inFavor ? 'approve' : 'reject'}`}>
-                                    <span className="vote-player">{player.name}</span>
+                                    <span 
+                                        className="vote-player"
+                                        style={{
+                                            fontSize: player.name.length > 8 
+                                                ? `${Math.max(12, 16 - (player.name.length - 8) * 0.5)}px` 
+                                                : undefined
+                                        }}
+                                    >
+                                        {player.name}
+                                    </span>
                                     <span className="vote-choice">{vote.inFavor ? '✓' : '✗'}</span>
                                 </div>
                             )
@@ -794,7 +826,14 @@ function RedemptionPhase({ game, isRedemptionImpasta, onKillChef, chefAvatars, r
                                     onClick={() => !isImpasta && handleSelectTarget(player.playerId)}
                                 >
                                     <img src={chefAvatars[index % 8]} alt={player.name} className="player-avatar" />
-                                    <div className="player-name">
+                                    <div 
+                                        className="player-name"
+                                        style={{
+                                            fontSize: player.name.length > 8 
+                                                ? `${Math.max(16, 25 - (player.name.length - 8) * 1.2)}px` 
+                                                : undefined
+                                        }}
+                                    >
                                         {player.name}
                                     </div>
                                 </div>
@@ -831,7 +870,16 @@ function ProponentOrderPanel({ game, currentProponentIndex }: { game: GameState,
                     return (
                         <div key={playerId} className={`proponent-item ${isCurrent ? 'current' : ''}`}>
                             <span className="proponent-number">{index + 1}</span>
-                            <span className="proponent-name">{player?.name || 'Unknown'}</span>
+                            <span 
+                                className="proponent-name"
+                                style={{
+                                    fontSize: player?.name && player.name.length > 8 
+                                        ? `${Math.max(12, 16 - (player.name.length - 8) * 0.5)}px` 
+                                        : undefined
+                                }}
+                            >
+                                {player?.name || 'Unknown'}
+                            </span>
                             {isCurrent && <span className="current-indicator">← Current</span>}
                         </div>
                     )
@@ -914,7 +962,16 @@ function RoundHistoryPanel({ game, chefAvatars }: { game: GameState, chefAvatars
 
                                                 return (
                                                     <div key={player.playerId} className={`vote-item ${vote.inFavor ? 'approve' : 'reject'}`}>
-                                                        <span className="vote-player">{player.name}</span>
+                                                        <span 
+                                                            className="vote-player"
+                                                            style={{
+                                                                fontSize: player.name.length > 8 
+                                                                    ? `${Math.max(12, 16 - (player.name.length - 8) * 0.5)}px` 
+                                                                    : undefined
+                                                            }}
+                                                        >
+                                                            {player.name}
+                                                        </span>
                                                     </div>
                                                 )
                                             })}

@@ -178,13 +178,22 @@
     .lobby-title-wrap { margin-bottom: 20px; }
     .room-code { font-size: 24px; padding: 10px 20px; letter-spacing: 4px; box-shadow: 4px 4px 0px black; }
   
-    .players-grid { gap: 10px; margin-bottom: 20px; }
-    .player-card { padding: 8px; border-radius: 12px; box-shadow: 3px 3px 0px black; max-width: calc(50% - 5px); box-sizing: border-box; }
+    .players-grid { gap: 5px; margin-bottom: 20px; }
+    .player-card { padding: 8px; border-radius: 12px; box-shadow: 3px 3px 0px black; max-width: calc(50% - 2.5px); box-sizing: border-box; }
+    .player-card.empty { margin: 0; }
   
     .avatar { width: 50px; height: 50px; margin-bottom: 6px; }
     .avatar-placeholder { font-size: 32px; }
   
-    .player-name { font-size: 13px; margin-bottom: 6px; height: 30px; }
+    .player-name { 
+        font-size: 13px; 
+        margin-bottom: 6px; 
+        height: 30px; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+    }
   
     .host-badge {
       top: -8px;
@@ -197,6 +206,14 @@
     .actions { gap: 12px; }
     .start-btn { padding: 15px; font-size: 18px; box-shadow: 4px 4px 0px black; }
     .leave-btn { padding: 12px; font-size: 14px; }
+    
+    .lobby-corner.right {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 8px 10px;
+    }
 }
 
 
