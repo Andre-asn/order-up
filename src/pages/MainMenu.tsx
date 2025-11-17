@@ -132,12 +132,12 @@ export default function MainMenu() {
         const name = joinName.trim()
         const room = joinRoom.trim().toUpperCase()
         if (name.length < 1 || name.length > 6) {
-        setJoinError('Name must be 1-6 characters')
-        return
+            setJoinError('Name must be 1-6 characters')
+            return
         }
         if (!room) {
-        setJoinError('Enter room code')
-        return
+            setJoinError('Enter room code')
+            return
         }
 
         setIsJoining(true)
