@@ -1,0 +1,7 @@
+build:
+  docker:
+    web: backend/Dockerfile
+  config:
+    WORKDIR: /app
+run:
+  web: /app/start.sh
