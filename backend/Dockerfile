@@ -20,9 +20,9 @@ COPY . .
 # Production image
 FROM base AS release
 
-# Install curl and the Datadog Agent
+# Install bash, curl, and the Datadog Agent
 USER root
-RUN apt-get update && apt-get install -y curl procps && \
+RUN apt-get update && apt-get install -y bash curl procps && \
     DD_INSTALL_ONLY=true DD_API_KEY=placeholder bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script_agent7.sh)" && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
