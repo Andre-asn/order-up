@@ -38,11 +38,23 @@ set -e\n\
 # Start Datadog Agent in the background\n\
 if [ -n "$DD_API_KEY" ]; then\n\
   echo "Starting Datadog Agent..."\n\
-  DD_SITE=${DD_SITE:-"us5.datadoghq.com"} \\\n\
-  DD_HOSTNAME=$(hostname) \\\n\
-  DD_LOGS_ENABLED=true \\\n\
-  DD_APM_ENABLED=true \\\n\
-  DD_APM_NON_LOCAL_TRAFFIC=true \\\n\
+  \n\
+  # Use Heroku dyno metadata for consistent hostname\n\
+  # Format: appname.dynotype.dynonumber (e.g., order-up-backend-prod.web.1)\n\
+  if [ -n "$HEROKU_APP_NAME" ] && [ -n "$DYNO" ]; then\n\
+    DD_HOSTNAME="${HEROKU_APP_NAME}.${DYNO}"\n\
+  else\n\
+    DD_HOSTNAME=$(hostname)\n\
+  fi\n\
+  \n\
+  export DD_HOSTNAME\n\
+  export DD_SITE=${DD_SITE:-"us5.datadoghq.com"}\n\
+  export DD_LOGS_ENABLED=true\n\
+  export DD_APM_ENABLED=true\n\
+  export DD_APM_NON_LOCAL_TRAFFIC=true\n\
+  export DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true\n\
+  \n\
+  echo "Starting Datadog Agent with hostname: $DD_HOSTNAME"\n\
   /opt/datadog-agent/bin/agent/agent run > /tmp/datadog.log 2>&1 &\n\
   \n\
   echo "Waiting for Datadog Agent to start..."\n\
