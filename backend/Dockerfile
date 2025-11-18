@@ -56,9 +56,19 @@ if [ -n "$DD_API_KEY" ]; then\n\
   \n\
   echo "Starting Datadog Agent with hostname: $DD_HOSTNAME"\n\
   /opt/datadog-agent/bin/agent/agent run > /tmp/datadog.log 2>&1 &\n\
+  AGENT_PID=$!\n\
   \n\
-  echo "Waiting for Datadog Agent to start..."\n\
-  sleep 5\n\
+  echo "Waiting for Datadog Agent to start (PID: $AGENT_PID)..."\n\
+  sleep 10\n\
+  \n\
+  # Check if agent is still running\n\
+  if ps -p $AGENT_PID > /dev/null 2>&1; then\n\
+    echo "Datadog Agent is running"\n\
+  else\n\
+    echo "WARNING: Datadog Agent failed to start!"\n\
+    echo "Agent logs:"\n\
+    cat /tmp/datadog.log 2>&1 || echo "No logs available"\n\
+  fi\n\
 fi\n\
 \n\
 # Start the application\n\
