@@ -2,7 +2,6 @@ import { Elysia } from "elysia";
 import { roomModule } from "./modules/room";
 import { cors } from "@elysiajs/cors";
 import { opentelemetry } from "@elysiajs/opentelemetry";
-import { record } from "@elysiajs/opentelemetry";
 import { spanProcessor } from './tracer';
 
 const PORT = process.env.PORT || 3000;
@@ -14,11 +13,9 @@ const app = new Elysia()
 	}))
 	.get("/", () => "Hello Elysia")
 	.get("/health", () => {
-		return record('health.check', () => {
-			const result = { status: "ok", timestamp: new Date().toISOString() };
-			console.log(`[OpenTelemetry] Health check completed`);
-			return result;
-		});
+		const result = { status: "ok", timestamp: new Date().toISOString() };
+		console.log(`[OpenTelemetry] Health check completed`);
+		return result;
 	})
 	.use(cors())
 	.use(roomModule)
