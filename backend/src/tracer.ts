@@ -4,19 +4,15 @@ import tracer from 'dd-trace'
 
 // Initialize tracer - it will connect to the Datadog Agent automatically
 tracer.init({
-	// Service name
+
 	service: process.env.DD_SERVICE || 'order-up-backend',
 
-	// Environment
 	env: process.env.DD_ENV || 'prod',
 
-	// Disable runtime metrics since Bun doesn't support them
 	runtimeMetrics: false,
 
-	// Disable profiling since Bun doesn't support it
 	profiling: false,
 
-	// Log startup
 	logInjection: false,
 
 })
