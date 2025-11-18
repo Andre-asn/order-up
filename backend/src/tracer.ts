@@ -1,28 +1,29 @@
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+// Datadog tracer configuration for Bun
+// The Datadog Agent is installed via Heroku buildpack and runs automatically
+import tracer from 'dd-trace'
 
-// Configure OpenTelemetry exporter for Datadog
-const datadogSite = process.env.DD_SITE || 'datadoghq.com'
-const datadogApiKey = process.env.DD_API_KEY
+// Initialize tracer - it will connect to the Datadog Agent automatically
+tracer.init({
+	// Service name
+	service: process.env.DD_SERVICE || 'order-up-backend',
 
-if (!datadogApiKey) {
-	console.error('[OpenTelemetry] ERROR: DD_API_KEY is not set! Traces will not be sent to Datadog.')
-	console.error('[OpenTelemetry] Set it with: heroku config:set DD_API_KEY=your-key-here -a your-app-name')
-}
+	// Environment
+	env: process.env.DD_ENV || 'prod',
 
-// Create OTLP exporter pointing to Datadog's trace intake endpoint
-export const traceExporter = new OTLPTraceExporter({
-	url: `https://trace-intake.${datadogSite}/api/v2/traces`,
-	headers: {
-		'DD-API-KEY': datadogApiKey || '',
-	},
+	// Disable runtime metrics since Bun doesn't support them
+	runtimeMetrics: false,
+
+	// Disable profiling since Bun doesn't support it
+	profiling: false,
+
+	// Log startup
+	logInjection: false,
+
 })
 
-// Create batch span processor for better performance
-export const spanProcessor = new BatchSpanProcessor(traceExporter)
+console.log(`[Datadog] Tracer initialized`)
+console.log(`[Datadog] Service: ${process.env.DD_SERVICE || 'order-up-backend'}`)
+console.log(`[Datadog] Environment: ${process.env.DD_ENV || 'prod'}`)
+console.log(`[Datadog] Agent will be available via Heroku buildpack`)
 
-console.log(`[OpenTelemetry] Exporter configured`)
-console.log(`[OpenTelemetry] Service: ${process.env.DD_SERVICE || 'order-up-backend'}`)
-console.log(`[OpenTelemetry] Environment: ${process.env.DD_ENV || 'prod'}`)
-console.log(`[OpenTelemetry] Datadog Site: ${datadogSite}`)
-console.log(`[OpenTelemetry] API Key: ${datadogApiKey ? '***configured***' : 'MISSING - traces will not be sent'}`)
+export default tracer

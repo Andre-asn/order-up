@@ -12,25 +12,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Build, Push and Release Backend to Heroku
+      - name: Deploy Backend to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          # Login to Heroku Container Registry
-          echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
-
-          # Build the Docker image
-          docker build -t registry.heroku.com/${{ secrets.HEROKU_BACKEND_APP_NAME }}/web ./backend
-
-          # Push to Heroku Container Registry
-          docker push registry.heroku.com/${{ secrets.HEROKU_BACKEND_APP_NAME }}/web
-
           # Install Heroku CLI
           curl https://cli-assets.heroku.com/install.sh | sh
 
-          # Release the image
-          heroku container:release web -a ${{ secrets.HEROKU_BACKEND_APP_NAME }}
+          # Add Heroku remote
+          git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/${{ secrets.HEROKU_BACKEND_APP_NAME }}.git || true
+
+          # Deploy backend subdirectory to Heroku using git subtree
+          git subtree push --prefix backend heroku main || git push heroku `git subtree split --prefix backend main`:main --force
 
       - name: Health Check Backend
         run: |
