@@ -1,3 +1,6 @@
+// IMPORTANT: Tracer must be imported FIRST before any other imports
+import './tracer';
+
 import { Elysia } from "elysia";
 import { roomModule } from "./modules/room";
 import { cors } from "@elysiajs/cors";

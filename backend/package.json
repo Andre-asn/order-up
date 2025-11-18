@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.0",
+    "dd-trace": "^5.79.0",
     "elysia": "latest"
   },
   "devDependencies": {
