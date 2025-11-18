@@ -25,10 +25,6 @@ COPY --from=install /app/node_modules ./node_modules
 COPY --from=build /app/src ./src
 COPY --from=build /app/package.json ./
 
-# Change ownership to bun user and switch to it
-RUN chown -R bun:bun /app
-USER bun
-
 # Expose port
 EXPOSE 3000
 
@@ -36,5 +32,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
-# Start the application
+# Start application
 CMD ["bun", "run", "src/index.ts"]

@@ -4,4 +4,4 @@ build:
   config:
     WORKDIR: /app
 run:
-  web: /app/start.sh
+  web: bun run src/index.ts

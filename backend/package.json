@@ -7,7 +7,10 @@
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.0",
-    "dd-trace": "^5.79.0",
+    "@elysiajs/opentelemetry": "latest",
+    "@opentelemetry/exporter-trace-otlp-http": "latest",
+    "@opentelemetry/resources": "latest",
+    "@opentelemetry/sdk-trace-node": "latest",
     "elysia": "latest"
   },
   "devDependencies": {
