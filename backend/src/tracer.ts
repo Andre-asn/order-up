@@ -1,6 +1,6 @@
 import tracer from 'dd-trace'
 
-// Initialize the Datadog tracer
+// Initialize the Datadog tracer in agentless mode
 tracer.init({
   // Service name that will appear in Datadog APM
   service: 'order-up-backend',
@@ -11,22 +11,20 @@ tracer.init({
   // Version of your application
   version: '1.0.0',
 
-  // Enable debug logging (set to false in production for performance)
+  // Enable debug logging
   logInjection: true,
 
   // APM configuration
   // NOTE: runtimeMetrics disabled because Bun doesn't support all libuv functions
-  // See: https://github.com/oven-sh/bun/issues/2462
   runtimeMetrics: false,
 
-  // Profiling (optional, disabled for Bun compatibility)
+  // Profiling disabled for Bun compatibility
   profiling: false,
 
-  // The Datadog Agent is running locally on port 8126
-  hostname: 'localhost',
-  port: 8126,
+  // Agentless mode - send directly to Datadog
+  // This is configured via DD_TRACE_AGENT_URL environment variable
 })
 
-console.log('[Datadog] Tracer initialized for Bun runtime')
+console.log('[Datadog] Tracer initialized in agentless mode')
 
 export default tracer
