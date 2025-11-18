@@ -3,17 +3,10 @@ import { lobbyModel } from './lobby/model';
 import { gameModel } from './game/model';
 import { lobbyService } from './lobby/service';
 import { gameRoomService } from './game/service';
-import tracer from '../../tracer';
 
 const roomConnections = new Map<string, Map<string, any>>();
 
-// DogStatsD client for custom metrics
-const StatsD = tracer.dogstatsd;
 
-// Server-side keepalive to prevent Heroku idle timeout (55s)
-// CRITICAL: Heroku router only counts DATA frames (not control frames like ping/pong)
-// The "bytes=0" in router logs proves ping frames don't count as activity
-// Must send actual JSON messages every 30s to prevent H15 timeout
 setInterval(() => {
 	const keepaliveMsg = JSON.stringify({ type: 'keepalive', ts: Date.now() });
 	let totalConnections = 0;
@@ -33,10 +26,6 @@ setInterval(() => {
 
 	if (totalConnections > 0) {
 		console.log(`[Keepalive] Sent data frames to ${sentCount}/${totalConnections} connections`);
-
-		// Send metrics to Datadog
-		StatsD.gauge('websocket.active_connections', totalConnections);
-		StatsD.gauge('websocket.active_rooms', roomConnections.size);
 	}
 }, 30000);
 
