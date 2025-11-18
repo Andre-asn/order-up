@@ -15,9 +15,11 @@ tracer.init({
   logInjection: true,
 
   // APM configuration
-  runtimeMetrics: true,
+  // NOTE: runtimeMetrics disabled because Bun doesn't support all libuv functions
+  // See: https://github.com/oven-sh/bun/issues/2462
+  runtimeMetrics: false,
 
-  // Profiling (optional, can be enabled for deeper insights)
+  // Profiling (optional, disabled for Bun compatibility)
   profiling: false,
 
   // The Datadog Agent is running locally on port 8126
@@ -25,6 +27,6 @@ tracer.init({
   port: 8126,
 })
 
-console.log('[Datadog] Tracer initialized')
+console.log('[Datadog] Tracer initialized for Bun runtime')
 
 export default tracer
