@@ -5,7 +5,7 @@
 > **Note**  
 > **Development Status:** Order Up! is currently in active development. The backend lobby system is functional, and most game room mechanics are complete, just fleshing out some UI components. Contributions and feedback are welcome!
 
-**Order Up!** is a real-time multiplayer social deduction game where 6-8 players compete as chefs trying to create the perfect soup. But beware—some chefs are secretly "Impastas" trying to sabotage the dish! Built with modern web technologies for a seamless, mobile-responsive experience.
+**Order Up!** is a real-time multiplayer social deduction game where 6-8 players compete as chefs trying to create the perfect soup. But beware — some chefs are secretly "Impastas" trying to sabotage the dish! Built with modern web technologies for a seamless, mobile-responsive experience.
 
 ---
 
@@ -62,7 +62,6 @@ App runs at `http://localhost:5173`
 - **Framework:** React 19
 - **Build Tool:** Vite 7 + SWC
 - **Language:** TypeScript
-- **Styling:** CSS Modules / Tailwind (TBD)
 
 ---
 
