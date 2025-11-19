@@ -1,5 +1,5 @@
 import { lobbyModel } from './model';
-import { trackDatabaseOperation } from '../../utils/sentry-tracking';
+import { trackDatabaseOperation } from '../../../utils/sentry-tracking';
 
 const lobbies = new Map();
 
