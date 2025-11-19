@@ -5,7 +5,7 @@
 > **Note**  
 > **Development Status:** Order Up! is currently in active development. The backend lobby system is functional, and most game room mechanics are complete, just fleshing out some UI components. Contributions and feedback are welcome!
 
-**Order Up!** is a real-time multiplayer social deduction game where 6-8 players compete as chefs trying to create the perfect soup. But beware — some chefs are secretly "Impastas" trying to sabotage the dish! Built with modern web technologies for a seamless, mobile-responsive experience.
+**Order Up!** is a real-time multiplayer social deduction game where 6-8 players compete as chefs trying to create the perfect soup. But beware - some chefs are secretly "Impastas" trying to sabotage the dish! Built with modern web technologies for a seamless, mobile-responsive experience.
 
 ---
 
@@ -20,7 +20,7 @@ A group of chefs are in charge of creating tonight's special soup for a crucial 
 **Game Flow:**
 1. **Voting Phase:** Players vote on which chefs will cook (example: 3→4→5→4→5 chefs per round for a 6 player game)
 2. **Cooking Phase:** Selected chefs secretly choose healthy or rotten ingredients (impastas can choose either one, and chefs can only select healthy!)
-3. **Result Phase:** Round outcome revealed — "Perfecto!" or "Disaster!" with rotten count
+3. **Result Phase:** Round outcome revealed - "Perfecto!" or "Disaster!" with rotten count
 
 ---
 
@@ -160,13 +160,6 @@ App runs at `http://localhost:5173`
 - [x] Mobile-responsive design
 - [x] Heroku deployment
 - [x] Sentry error tracking integration
-
----
-
-## 📚 Documentation
-
-- [Game Rules & Context](/Game_Premise)
-- [Technical Architecture](/Technical_Context)
 
 ---
 
