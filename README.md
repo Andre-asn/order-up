@@ -1,3 +1,3 @@
 # order-up
-![readme logo](https://github.com/user-attachments/assets/edbdd0eb-b10d-4b7e-83f5-3ca8f7ed3a7c)
+<img width="1661" height="584" alt="readme logo" src="https://github.com/user-attachments/assets/d571b21b-fadb-46f4-bd05-0a9bead1d98a" />
 A game about suspicious chefs cooking it up in the kitchen...
