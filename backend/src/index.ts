@@ -37,35 +37,38 @@ const sentryMiddleware = new Elysia({ name: "sentry-tracing" })
 		const statusCode = typeof set.status === "number" ? set.status : 200;
 		const duration = sentryStartTime ? Date.now() - sentryStartTime : undefined;
 		
-		// Create a span for this HTTP request
-		Sentry.startSpan(
-			{
-				name: `${method} ${pathname}`,
-				op: "http.server",
-				attributes: {
-					"http.method": method,
-					"http.url": request.url,
-					"http.route": pathname,
-					"http.query": url.search,
-					"http.status_code": statusCode,
-					...(duration && { "http.duration_ms": duration }),
-				},
-			},
-			() => {
-				// Update context with response status
-				Sentry.setContext("http.response", {
-					status_code: statusCode,
-					duration_ms: duration,
-				});
-				
-				// Set tags for filtering in Sentry
-				Sentry.setTag("http.status_code", statusCode.toString());
-				
-				if (statusCode >= 400) {
-					Sentry.setTag("http.error", "true");
-				}
+		// Create a transaction for this HTTP request with full timing
+		Sentry.withScope((scope) => {
+			scope.setContext("http.response", {
+				status_code: statusCode,
+				duration_ms: duration,
+			});
+			
+			scope.setTag("http.status_code", statusCode.toString());
+			
+			if (statusCode >= 400) {
+				scope.setTag("http.error", "true");
 			}
-		);
+			
+			// Create the transaction span
+			Sentry.startSpan(
+				{
+					name: `${method} ${pathname}`,
+					op: "http.server",
+					attributes: {
+						"http.method": method,
+						"http.url": request.url,
+						"http.route": pathname,
+						"http.query": url.search,
+						"http.status_code": statusCode,
+						...(duration && { "http.duration_ms": duration }),
+					},
+				},
+				() => {
+					// Span will finish when callback completes
+				}
+			);
+		});
 	})
 	.onError(({ error, code, request, set }) => {
 		// Capture exception with request context
@@ -101,7 +104,19 @@ const app = new Elysia()
 	.use(sentryMiddleware)
 	.get("/", () => "Hello Elysia")
 	.get("/health", () => {
-		return { status: "ok", timestamp: new Date().toISOString() };
+		return Sentry.startSpan(
+			{
+				name: "GET /health",
+				op: "http.server",
+				attributes: {
+					"http.method": "GET",
+					"http.route": "/health",
+				},
+			},
+			() => {
+				return { status: "ok", timestamp: new Date().toISOString() };
+			}
+		);
 	})
 	.use(cors())
 	.use(roomModule)
