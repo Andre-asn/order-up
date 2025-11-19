@@ -1,4 +1,5 @@
 import { lobbyModel } from './model';
+import { trackDatabaseOperation } from '../../utils/sentry-tracking';
 
 const lobbies = new Map();
 
@@ -25,7 +26,9 @@ export class lobbyService {
             roomStatus: 'waiting',
         };
         
-        lobbies.set(roomId, lobby);
+        trackDatabaseOperation("set", "lobbies", roomId, () => {
+            lobbies.set(roomId, lobby);
+        });
         return { roomId, playerId, lobby };
     }
 
@@ -35,7 +38,9 @@ export class lobbyService {
         playerId: string;
         lobby: lobbyModel.lobby;
     }> {
-        const lobby = lobbies.get(data.roomId);
+        const lobby = trackDatabaseOperation("get", "lobbies", data.roomId, () => {
+            return lobbies.get(data.roomId);
+        });
         if (!lobby) {
             throw new Error('Lobby not found');
         }
@@ -52,13 +57,17 @@ export class lobbyService {
         };
 
         lobby.players.push(newPlayer);
-        lobbies.set(data.roomId, lobby);
+        trackDatabaseOperation("set", "lobbies", data.roomId, () => {
+            lobbies.set(data.roomId, lobby);
+        });
 
         return { playerId, lobby };
     }
 
     static removePlayer(roomId: string, playerId: string): lobbyModel.lobby | null {
-        const lobby = lobbies.get(roomId);
+        const lobby = trackDatabaseOperation("get", "lobbies", roomId, () => {
+            return lobbies.get(roomId);
+        });
         if (!lobby) {
             return null;
         }
@@ -86,7 +95,9 @@ export class lobbyService {
     }
 
     static getLobby(roomId: string): lobbyModel.lobby {
-        const lobby = lobbies.get(roomId);
+        const lobby = trackDatabaseOperation("get", "lobbies", roomId, () => {
+            return lobbies.get(roomId);
+        });
         if (!lobby) {
             throw new Error('Lobby not found');
         }
@@ -94,11 +105,15 @@ export class lobbyService {
     }
 
     static deleteLobby(roomId: string): void {
-        lobbies.delete(roomId);
+        trackDatabaseOperation("delete", "lobbies", roomId, () => {
+            lobbies.delete(roomId);
+        });
     }
 
     static canStartGame(roomId: string): boolean {
-        const room = lobbies.get(roomId);
+        const room = trackDatabaseOperation("get", "lobbies", roomId, () => {
+            return lobbies.get(roomId);
+        });
         return (room.players.length >= 6 && room.players.length <= 8)
     }
 

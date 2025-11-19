@@ -1,6 +1,7 @@
 import { gameModel } from './model';
 import { lobbyModel } from '../lobby/model';
 import { getGameConfig, GameConfig } from './rules';
+import { trackDatabaseOperation } from '../../../utils/sentry-tracking';
 
 const gameRooms = new Map();
 const phaseTimers = new Map();
@@ -94,7 +95,9 @@ export class gameRoomService {
             redemptionImpasta: null,
         };
 
-        gameRooms.set(lobby.roomId, gameRoom)
+        trackDatabaseOperation("set", "gameRooms", lobby.roomId, () => {
+            gameRooms.set(lobby.roomId, gameRoom);
+        });
         this.startPhaseTimer(gameRoom);
 
         return gameRoom;
@@ -417,7 +420,9 @@ export class gameRoomService {
     }
     
     static getGameRoom(roomId: string): gameModel.gameRoom {
-        const room = gameRooms.get(roomId);
+        const room = trackDatabaseOperation("get", "gameRooms", roomId, () => {
+            return gameRooms.get(roomId);
+        });
         if (!room) throw new Error('Game room not found');
         return room;
     }
@@ -467,7 +472,9 @@ export class gameRoomService {
     
     static deleteGameRoom(roomId: string): void {
         if (!gameRooms.has(roomId)) return;
-        gameRooms.delete(roomId);
+        trackDatabaseOperation("delete", "gameRooms", roomId, () => {
+            gameRooms.delete(roomId);
+        });
         cleanupTimers.delete(roomId);
         phaseTimers.delete(roomId);
     }

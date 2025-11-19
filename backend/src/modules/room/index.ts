@@ -3,6 +3,7 @@ import { lobbyModel } from './lobby/model';
 import { gameModel } from './game/model';
 import { lobbyService } from './lobby/service';
 import { gameRoomService } from './game/service';
+import { trackWebSocketEvent, trackWebSocketMessage } from '../../utils/sentry-tracking';
 
 const roomConnections = new Map<string, Map<string, any>>();
 
@@ -217,6 +218,10 @@ export const roomModule = new Elysia({ prefix: '/room' })
             const { roomId } = ws.data.params;
             const playerId = ws.data.query?.playerId;
             
+            if (playerId && roomId) {
+                trackWebSocketEvent("open", roomId, playerId);
+            }
+            
             console.log(`[Backend] WebSocket open for playerId: ${playerId}, roomId: ${roomId}`);
             
             if (!playerId) {
@@ -318,7 +323,8 @@ export const roomModule = new Elysia({ prefix: '/room' })
             const playerId = ws.data.query.playerId;
 
             try {
-                switch (message.type) {
+                return trackWebSocketMessage(message.type, roomId, playerId, async () => {
+                    switch (message.type) {
                     case 'keepalive_ack':
                         // Client acknowledged keepalive - this creates bidirectional traffic for Heroku
                         // No action needed, just acknowledge receipt
@@ -652,6 +658,7 @@ export const roomModule = new Elysia({ prefix: '/room' })
                         break;
                     }
                 }
+                });
             } catch (error) {
                 ws.send(JSON.stringify({
                     type: 'error',
@@ -665,6 +672,8 @@ export const roomModule = new Elysia({ prefix: '/room' })
             const playerId = ws.data.query.playerId;
 
             if (!playerId || !roomId) return;
+            
+            trackWebSocketEvent("close", roomId, playerId);
 
             const connections = roomConnections.get(roomId);
             if (connections) {
