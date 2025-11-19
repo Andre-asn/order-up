@@ -101,15 +101,6 @@ const app = new Elysia()
 	.use(sentryMiddleware)
 	.get("/", () => "Hello Elysia")
 	.get("/health", () => {
-		// Test Sentry is working
-		if (process.env.SENTRY_DSN) {
-			Sentry.captureMessage("Health check endpoint hit", {
-				level: "info",
-				tags: {
-					endpoint: "/health",
-				},
-			});
-		}
 		return { status: "ok", timestamp: new Date().toISOString() };
 	})
 	.use(cors())
