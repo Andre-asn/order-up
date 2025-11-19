@@ -16,7 +16,7 @@ const sentryMiddleware = new Elysia({ name: "sentry-tracing" })
 		const pathname = url.pathname;
 		const startTime = Date.now();
 		
-		// Set request context for all events in this request
+		// Set request context
 		Sentry.setContext("http.request", {
 			method,
 			url: request.url,
@@ -37,7 +37,7 @@ const sentryMiddleware = new Elysia({ name: "sentry-tracing" })
 		const statusCode = typeof set.status === "number" ? set.status : 200;
 		const duration = sentryStartTime ? Date.now() - sentryStartTime : undefined;
 		
-		// Create a transaction for this HTTP request
+		// Create a span for this HTTP request
 		Sentry.startSpan(
 			{
 				name: `${method} ${pathname}`,
@@ -101,6 +101,15 @@ const app = new Elysia()
 	.use(sentryMiddleware)
 	.get("/", () => "Hello Elysia")
 	.get("/health", () => {
+		// Test Sentry is working
+		if (process.env.SENTRY_DSN) {
+			Sentry.captureMessage("Health check endpoint hit", {
+				level: "info",
+				tags: {
+					endpoint: "/health",
+				},
+			});
+		}
 		return { status: "ok", timestamp: new Date().toISOString() };
 	})
 	.use(cors())
