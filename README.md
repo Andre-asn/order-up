@@ -1,2 +1,3 @@
 # order-up
+![readme logo](https://github.com/user-attachments/assets/edbdd0eb-b10d-4b7e-83f5-3ca8f7ed3a7c)
 A game about suspicious chefs cooking it up in the kitchen...
