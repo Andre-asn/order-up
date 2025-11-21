@@ -134,17 +134,21 @@ App runs at `http://localhost:5173`
 │   └── src/
 │       ├── index.ts        # App entry point
 │       └── modules/
-│           ├── lobby/      # Lobby management
-│           │   ├── model.ts
-│           │   ├── service.ts
-│           │   └── index.ts
-│           └── gameRoom/   # Game logic (WIP)
+│           └── room/
+│               ├── lobby/      # Lobby management
+│               │   ├── model.ts
+│               │   ├── service.ts
+│               ├── gameRoom/   # Game logic
+│               │   ├── model.ts
+│               │   ├── service.ts
+│               │   └── rules.ts
+│               └── index.ts/   # Controller
 │
 └── frontend/               # React frontend (current Vite project)
     └── src/
-        ├── modules/
-        ├── shared/
-        └── services/
+        ├── pages/
+        ├── styles/
+        └── contexts/
 ```
 
 ---
@@ -165,7 +169,7 @@ App runs at `http://localhost:5173`
 
 ## 🙏 Acknowledgments
 
-- Heavily inspired by [Mindnight](https://store.steampowered.com/app/667870/MINDNIGHT/) - a steam game by [NoMoon](https://store.steampowered.com/curator/33161768)
+- Heavily inspired by [Mindnight](https://store.steampowered.com/app/667870/MINDNIGHT/) - a steam game by [No Moon](https://store.steampowered.com/curator/33161768)
 
 ---
 

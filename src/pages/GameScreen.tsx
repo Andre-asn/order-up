@@ -427,7 +427,7 @@ export default function GameScreen() {
             {showRoundResult && lastRoundResult && (
                 <div className="round-result-popup">
                     <div className={`round-result ${lastRoundResult.success ? 'success' : 'failure'}`}>
-                        {lastRoundResult.success ? 'Perfetto!' : 'Disaster!'}
+                        {lastRoundResult.success ? 'Perfecto!' : 'Disaster!'}
                         <div className="rotten-count">
                             {lastRoundResult.rottenCount ?? 0} rotten ingredient{(lastRoundResult.rottenCount ?? 0) !== 1 ? 's' : ''} {(lastRoundResult.rottenCount ?? 0) !== 1 ? 'were' : 'was'} found!
                         </div>
@@ -921,7 +921,7 @@ function RoundHistoryPanel({ game, chefAvatars }: { game: GameState, chefAvatars
                             <div className="history-header">
                                 <span className="history-round">Shift {roundNum}</span>
                                 <span className={`history-result ${success ? 'success' : 'failure'}`}>
-                                    {success ? `Perfetto! (${rottenCount} rotten)` : `Disaster! (${rottenCount} rotten)`}
+                                    {success ? `Perfecto! (${rottenCount} rotten)` : `Disaster! (${rottenCount} rotten)`}
                                 </span>
                             </div>
 

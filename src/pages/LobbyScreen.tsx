@@ -189,9 +189,7 @@ export default function LobbyScreen() {
                             <div 
                                 className={"player-name" + (player.isEmpty ? ' empty' : '')}
                                 style={{
-                                    fontSize: player.name.length > 4 
-                                        ? `${Math.max(9, 20 - (player.name.length - 4) * 0.4)}px` 
-                                        : '13px'
+                                    fontSize: `${Math.max(9, 20 - (player.name.length - 4) * 0.4)}px`
                                 }}
                             >
                                 {player.name}

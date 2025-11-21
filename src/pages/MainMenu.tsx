@@ -217,7 +217,7 @@ export default function MainMenu() {
                   <span className="btn-corner corner-bl alt" />
                 </button>
 
-                <button onClick={() => {}} className="menu-btn btn-light">
+                <button onClick={() => navigate('/tutorial')} className="menu-btn btn-light">
                   <span className="btn-content">TUTORIAL</span>
                   <span className="btn-corner corner-tr" />
                   <span className="btn-corner corner-bl" />
