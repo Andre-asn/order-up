@@ -69,7 +69,6 @@ export function RoomWebSocketProvider({ roomId, playerId, children }: Props) {
                     return
                 }
 
-                console.log(`[WebSocketContext] ${playerId} received raw message:`, payload.type)
                 window.dispatchEvent(new CustomEvent('room-message', { detail: payload }))
             }
 

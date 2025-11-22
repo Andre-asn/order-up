@@ -121,5 +121,3 @@ const app = new Elysia()
 	.use(cors())
 	.use(roomModule)
 	.listen(PORT);
-
-console.log(`🦊 Elysia is running at http://localhost:${PORT}`);

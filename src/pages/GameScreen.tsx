@@ -138,16 +138,12 @@ export default function GameScreen() {
             const customEvent = event as CustomEvent
             const payload = customEvent.detail
 
-            console.log(`[GameScreen] ${currentPlayerId} received message:`, payload.type)
-
             switch (payload.type) {
                 case 'game_update':
-                    console.log(`[GameScreen] ${currentPlayerId} received game_update, setting game state`)
                     setGame(payload.game)
                     break
 
                 case 'role_reveal':
-                    console.log(`[GameScreen] ${currentPlayerId} received role_reveal:`, payload.yourRole)
                     setRole({
                         yourRole: payload.yourRole,
                         isHeadChef: payload.isHeadChef,
@@ -157,7 +153,6 @@ export default function GameScreen() {
                     break
 
                 case 'phase_change':
-                    console.log(`[GameScreen] ${currentPlayerId} received phase_change:`, payload.newPhase)
                     if (payload.newPhase !== 'cooking') {
                         setSelectedChefs([])
                     }
@@ -219,19 +214,15 @@ export default function GameScreen() {
 
     // Request initial game state when component mounts - always request, even if messages were already sent
     useEffect(() => {
-        console.log(`[GameScreen] Component mounted for ${currentPlayerId}, ws:`, ws ? `readyState=${ws.readyState} (OPEN=1)` : 'null')
-        
         let retryCount = 0
         const maxRetries = 50
         
         const requestSync = () => {
             if (retryCount >= maxRetries) {
-                console.log(`[GameScreen] ${currentPlayerId} max retries reached, giving up`)
                 return
             }
             
             if (ws && ws.readyState === 1) {
-                console.log(`[GameScreen] ${currentPlayerId} sending sync_game request`)
                 ws.send(JSON.stringify({
                     type: 'sync_game',
                     roomId: roomId,
@@ -239,7 +230,6 @@ export default function GameScreen() {
                 }))
             } else {
                 retryCount++
-                console.log(`[GameScreen] ${currentPlayerId} ws not ready (readyState=${ws?.readyState}), retry ${retryCount}/${maxRetries}...`)
                 setTimeout(requestSync, 100)
             }
         }
@@ -384,9 +374,6 @@ export default function GameScreen() {
         )
     }
 
-    useEffect(() => {
-        console.log(`[GameScreen] ${currentPlayerId} state check - game:`, game ? 'set' : 'null', 'role:', role ? 'set' : 'null')
-    }, [game, role, currentPlayerId])
 
     if (!game || !role) {
         return (

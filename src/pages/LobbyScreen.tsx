@@ -49,14 +49,12 @@ export default function LobbyScreen() {
                     break
 
                 case 'game_starting':
-                    console.log(`[LobbyScreen] ${currentPlayerId} received game_starting, navigating to game`)
                     navigate('game')
                     break
 
                 case 'game_update':
                 case 'role_reveal':
                 case 'phase_change':
-                    console.log(`[LobbyScreen] ${currentPlayerId} received ${payload.type} - forwarding to GameScreen via window event`)
                     break
 
                 case 'error':
