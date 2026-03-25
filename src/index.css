@@ -63,3 +63,55 @@ button:focus-visible {
 }
 
 /* Keep light theme by default; remove dark scheme variants */
+
+/* Landscape orientation warning — hidden by default, shown on phones in landscape */
+.orientation-warning {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #ffffff;
+  z-index: 999999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.orientation-warning-icon {
+  font-size: 64px;
+  animation: rotate-hint 1.5s ease-in-out infinite;
+}
+
+.orientation-warning-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.orientation-warning-subtitle {
+  font-size: 15px;
+  margin: 0;
+  opacity: 0.7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@keyframes rotate-hint {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-90deg); }
+  70% { transform: rotate(-90deg); }
+}
+
+/* Show only on phones (max-width: 900px) in landscape orientation */
+@media (orientation: landscape) and (max-width: 900px) {
+  .orientation-warning {
+    display: flex;
+  }
+}

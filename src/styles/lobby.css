@@ -5,7 +5,7 @@
   padding: 20px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 /* Title + Room code */
