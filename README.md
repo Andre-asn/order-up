@@ -24,31 +24,6 @@ A group of chefs are in charge of creating tonight's special soup for a crucial 
 
 ---
 
-## 🚀 Quick Start
-
-### Prerequisites
-- [Bun](https://bun.sh/) v1.0+
-- Node.js 20+ (for frontend tooling)
-
-### Running Locally
-
-**Backend (Elysia):**
-```bash
-cd backend
-bun install
-bun run dev
-```
-Server runs at `http://localhost:3000`
-
-**Frontend (React + Vite):**
-```bash
-bun install
-bun run dev
-```
-App runs at `http://localhost:5173`
-
----
-
 ## 🛠 Tech Stack
 
 **Backend:**
@@ -153,20 +128,6 @@ App runs at `http://localhost:5173`
 
 ---
 
-## 🎯 Roadmap
-
-- [x] Backend lobby system (create, join, WebSocket sync)
-- [x] Player management and host migration
-- [x] Game room mechanics (voting, ingredient selection)
-- [x] Role assignment (Chef/Impasta distribution)
-- [x] Round progression and win conditions
-- [ ] Frontend UI components
-- [x] Mobile-responsive design
-- [x] Heroku deployment
-- [x] Sentry error tracking integration
-
----
-
 ## 🙏 Acknowledgments
 
 - Heavily inspired by [Mindnight](https://store.steampowered.com/app/667870/MINDNIGHT/) - a steam game by [No Moon](https://store.steampowered.com/curator/33161768)
@@ -174,4 +135,3 @@ App runs at `http://localhost:5173`
 ---
 
 **Made with ❤️**
-*Cook up some chaos!*
