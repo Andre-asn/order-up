@@ -270,8 +270,16 @@ export const roomModule = new Elysia({ prefix: '/room' })
                 ws.subscribe(`room:${roomId}`);
                 
                 if (isGame) {
-                    gameRoomService.cancelDisconnectRemoval(roomId, playerId);
+                    const wasDisconnected = gameRoomService.cancelDisconnectRemoval(roomId, playerId);
                     gameRoomService.cancelCleanup(roomId);
+
+                    if (wasDisconnected) {
+                        broadcastToRoom(roomId, {
+                            type: 'player_reconnected',
+                            playerId,
+                            playerName: player.name,
+                        });
+                    }
                     const gameRoom = room as gameModel.gameRoom;
                     
                     ws.send(JSON.stringify({
@@ -654,6 +662,16 @@ export const roomModule = new Elysia({ prefix: '/room' })
 
                 if (room.currentPhase === 'game_over') {
                     return;
+                }
+
+                const disconnectingPlayer = room.players.find((p: any) => p.playerId === playerId);
+                if (disconnectingPlayer) {
+                    broadcastToRoom(roomId, {
+                        type: 'player_disconnected',
+                        playerId,
+                        playerName: disconnectingPlayer.name,
+                        reconnectDeadline: Date.now() + 30000,
+                    });
                 }
 
                 gameRoomService.scheduleDisconnectRemoval(roomId, playerId, () => {

@@ -79,6 +79,7 @@ export default function GameScreen() {
     const [lastRoundResult, setLastRoundResult] = useState<{ success: boolean, rottenCount: number } | null>(null)
     const [isRedemptionImpasta, setIsRedemptionImpasta] = useState(false)
     const [voteSent, setVoteSent] = useState(false)
+    const [disconnectedPlayers, setDisconnectedPlayers] = useState<Map<string, { name: string, deadline: number }>>(new Map())
     const [ingredientSent, setIngredientSent] = useState(false)
     const [proposalSent, setProposalSent] = useState(false)
 
@@ -198,6 +199,30 @@ export default function GameScreen() {
                     })
                     break
 
+                case 'player_disconnected':
+                    setDisconnectedPlayers(prev => {
+                        const next = new Map(prev)
+                        next.set(payload.playerId, { name: payload.playerName, deadline: payload.reconnectDeadline })
+                        return next
+                    })
+                    break
+
+                case 'player_reconnected':
+                    setDisconnectedPlayers(prev => {
+                        const next = new Map(prev)
+                        next.delete(payload.playerId)
+                        return next
+                    })
+                    break
+
+                case 'player_left':
+                    setDisconnectedPlayers(prev => {
+                        const next = new Map(prev)
+                        next.delete(payload.playerId)
+                        return next
+                    })
+                    break
+
                 case 'redemption_selected':
                     setIsRedemptionImpasta(true)
                     break
@@ -253,6 +278,22 @@ export default function GameScreen() {
 
         return () => clearInterval(interval)
     }, [game?.phaseDeadline])
+
+    // Tick countdown for disconnected players and remove any that have expired
+    useEffect(() => {
+        if (disconnectedPlayers.size === 0) return
+        const interval = setInterval(() => {
+            setDisconnectedPlayers(prev => {
+                const now = Date.now()
+                const next = new Map(prev)
+                prev.forEach((info, id) => {
+                    if (info.deadline <= now) next.delete(id)
+                })
+                return next.size !== prev.size ? next : prev
+            })
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [disconnectedPlayers.size])
 
     const currentProponent = useMemo(() => {
         if (!game) return null
@@ -388,6 +429,22 @@ export default function GameScreen() {
             <div className="game-background">
                 <img src={soupGif} alt="" className="game-background-soup" />
             </div>
+
+            {disconnectedPlayers.size > 0 && (
+                <div className="reconnection-banner">
+                    {Array.from(disconnectedPlayers.entries()).map(([pid, info]) => {
+                        const secondsLeft = Math.max(0, Math.ceil((info.deadline - Date.now()) / 1000))
+                        return (
+                            <div key={pid} className="reconnection-item">
+                                <span className="reconnection-icon">⚠️</span>
+                                <span className="reconnection-name">{info.name}</span>
+                                <span className="reconnection-text">disconnected — reconnecting...</span>
+                                <span className="reconnection-timer">{secondsLeft}s</span>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
 
             <div className="game-header">
                 <div className="game-header-left">

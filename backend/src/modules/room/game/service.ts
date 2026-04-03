@@ -461,13 +461,15 @@ export class gameRoomService {
         disconnectTimers.set(key, timer);
     }
     
-    static cancelDisconnectRemoval(roomId: string, playerId: string): void {
+    static cancelDisconnectRemoval(roomId: string, playerId: string): boolean {
         const key = `${roomId}-${playerId}`;
         const timer = disconnectTimers.get(key);
         if (timer) {
             clearTimeout(timer);
             disconnectTimers.delete(key);
+            return true;
         }
+        return false;
     }
     
     static deleteGameRoom(roomId: string): void {
