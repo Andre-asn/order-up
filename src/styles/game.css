@@ -147,6 +147,50 @@
     pointer-events: none;
 }
 
+/* On mobile, hide the fixed banner — inline card overlay is used instead */
+@media (max-width: 768px) {
+    .reconnection-banner {
+        display: none;
+    }
+}
+
+/* Inline reconnecting overlay on player cards (mobile only) */
+.player-reconnecting-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 245, 157, 0.93);
+    border: 2px solid #f59e0b;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    z-index: 2;
+}
+
+@media (max-width: 768px) {
+    .player-reconnecting-overlay {
+        display: flex;
+    }
+}
+
+.player-reconnecting-label {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #92400e;
+    text-align: center;
+}
+
+.player-reconnecting-timer {
+    font-size: 18px;
+    font-weight: 900;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #b45309;
+}
+
 .reconnection-item {
     display: flex;
     align-items: center;

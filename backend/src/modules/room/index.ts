@@ -134,6 +134,31 @@ gameRoomService.setTimeoutBroadcastCallback((roomId: string, room: any) => {
 });
 
 export const roomModule = new Elysia({ prefix: '/room' })
+    .get('/:roomId/check', ({ params, query }) => {
+        const { roomId } = params;
+        const playerId = (query as any)?.playerId as string | undefined;
+
+        try {
+            const gameRoom = gameRoomService.getGameRoom(roomId);
+            if (playerId) {
+                const player = gameRoom.players.find((p: any) => p.playerId === playerId);
+                if (!player || player.disconnected) return { exists: false };
+            }
+            return { exists: true, screen: 'game' as const };
+        } catch {
+            try {
+                const lobby = lobbyService.getLobby(roomId);
+                if (playerId) {
+                    const player = lobby.players.find(p => p.playerId === playerId);
+                    if (!player) return { exists: false };
+                }
+                return { exists: true, screen: 'lobby' as const };
+            } catch {
+                return { exists: false };
+            }
+        }
+    })
+
     .post('/create', async ({ body, set }) => {
         try {
             const { roomId, playerId, lobby } = await lobbyService.createLobby(body);

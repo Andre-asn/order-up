@@ -1,6 +1,6 @@
 import '../styles/main-menu.css'
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SESSION_KEY } from './RoomWrapper'
 import { useMusic } from '../components/MusicContext'
 import soupGif from '../assets/soup.gif'
@@ -87,6 +87,24 @@ export default function MainMenu() {
             return null
         }
     })
+
+    // Validate saved session against the backend — silently discard stale ones
+    useEffect(() => {
+        if (!savedSession) return
+        const validate = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/room/${savedSession.roomId}/check?playerId=${savedSession.playerId}`)
+                const data = await res.json()
+                if (!data.exists) {
+                    localStorage.removeItem(SESSION_KEY)
+                    setSavedSession(null)
+                }
+            } catch {
+                // Network error — keep showing the modal, user can dismiss manually
+            }
+        }
+        validate()
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3000'
 

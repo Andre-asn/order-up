@@ -548,6 +548,7 @@ export default function GameScreen() {
                         knownImpastas={role.knownImpastas}
                         role={role}
                         proposalSent={proposalSent}
+                        disconnectedPlayers={disconnectedPlayers}
                     />
                 )}
 
@@ -639,7 +640,7 @@ function RoundTracker({ rounds, currentRound, playerCount }: { rounds: [boolean,
     )
 }
 
-function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onPropose, onSkip, currentPlayerId, chefAvatars, knownImpastas, role, proposalSent }: any) {
+function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onPropose, onSkip, currentPlayerId, chefAvatars, knownImpastas, role, proposalSent, disconnectedPlayers }: any) {
     const requiredChefs: number = getRequiredChefsForRound(game.round, game.players.length)
     const currentProponent: string = game.proponentOrder[game.currentProponentIndex]
     const proponentName: string = game.players.find((p: Player) => p.playerId === currentProponent)?.name
@@ -683,6 +684,16 @@ function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onProp
                             >
                                 {player.name}
                             </div>
+                            {disconnectedPlayers?.has(player.playerId) && (() => {
+                                const info = disconnectedPlayers.get(player.playerId)
+                                const secondsLeft = Math.max(0, Math.ceil((info.deadline - Date.now()) / 1000))
+                                return (
+                                    <div className="player-reconnecting-overlay">
+                                        <span className="player-reconnecting-label">Reconnecting</span>
+                                        <span className="player-reconnecting-timer">{secondsLeft}s</span>
+                                    </div>
+                                )
+                            })()}
                         </div>
                     )
                 })}
