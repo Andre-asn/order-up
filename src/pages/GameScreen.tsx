@@ -81,6 +81,9 @@ export default function GameScreen() {
     const [isRedemptionImpasta, setIsRedemptionImpasta] = useState(false)
     const [voteSent, setVoteSent] = useState(false)
     const [disconnectedPlayers, setDisconnectedPlayers] = useState<Map<string, { name: string, deadline: number }>>(new Map())
+    const [showRoleReveal, setShowRoleReveal] = useState(false)
+    const [roleRevealHiding, setRoleRevealHiding] = useState(false)
+    const roleRevealShownRef = useRef(false)
     const [ingredientSent, setIngredientSent] = useState(false)
     const [proposalSent, setProposalSent] = useState(false)
 
@@ -152,6 +155,10 @@ export default function GameScreen() {
                         isHiddenImpasta: payload.isHiddenImpasta || false,
                         knownImpastas: payload.knownImpastas || []
                     })
+                    if (!roleRevealShownRef.current) {
+                        roleRevealShownRef.current = true
+                        setShowRoleReveal(true)
+                    }
                     break
 
                 case 'phase_change':
@@ -378,6 +385,14 @@ export default function GameScreen() {
         }))
     }
 
+    const handleDismissRoleReveal = () => {
+        setRoleRevealHiding(true)
+        setTimeout(() => {
+            setShowRoleReveal(false)
+            setRoleRevealHiding(false)
+        }, 300)
+    }
+
     const handleKillChef = (targetChefId: string) => {
         if (!ws || !roomId || ws.readyState !== WebSocket.OPEN) return
 
@@ -425,11 +440,44 @@ export default function GameScreen() {
         )
     }
 
+    const getRoleLabel = (r: RoleInfo) => {
+        if (r.isHeadChef)      return { article: 'You are the', role: 'Head Chef',       cls: 'role-headchef' }
+        if (r.isHiddenImpasta) return { article: 'You are the', role: 'Hidden Impasta',  cls: 'role-hidden'   }
+        if (r.yourRole === 'impasta') return { article: 'You are an',  role: 'Impasta',  cls: 'role-impasta'  }
+        return                        { article: 'You are a',   role: 'Chef',             cls: 'role-chef'     }
+    }
+
+    const getRoleHint = (r: RoleInfo) => {
+        if (r.isHeadChef)      return 'You know all the impastas. Survive the redemption round to secure the win.'
+        if (r.isHiddenImpasta) return 'Your fellow impastas do not know you. Use that to your advantage.'
+        if (r.yourRole === 'impasta') return 'Sabotage 3 cooking shifts, or force 5 rejected proposals to win.'
+        return 'Successfully complete 3 cooking shifts to win.'
+    }
+
     return (
         <div className="game-root">
             <div className="game-background">
                 <img src={soupGif} alt="" className="game-background-soup" />
             </div>
+
+            {showRoleReveal && role && (() => {
+                const { article, role: roleName, cls } = getRoleLabel(role)
+                return (
+                    <div
+                        className={`role-reveal-overlay${roleRevealHiding ? ' hiding' : ''}`}
+                        onClick={handleDismissRoleReveal}
+                    >
+                        <div className="role-reveal-card">
+                            <div className="role-reveal-eyebrow">Your Role</div>
+                            <span className="role-reveal-article">{article}</span>
+                            <div className={`role-reveal-role ${cls}`}>{roleName}</div>
+                            <div className="role-reveal-divider" />
+                            <div className="role-reveal-hint">{getRoleHint(role)}</div>
+                            <div className="role-reveal-continue">Click anywhere to continue</div>
+                        </div>
+                    </div>
+                )
+            })()}
 
             {disconnectedPlayers.size > 0 && (
                 <div className="reconnection-banner">

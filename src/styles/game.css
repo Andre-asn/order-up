@@ -7,6 +7,133 @@
     font-style: normal;
 }
 
+/* ── Role reveal overlay ─────────────────────────────────────── */
+
+.role-reveal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.88);
+    cursor: pointer;
+    animation: role-overlay-in 0.35s ease both;
+}
+
+.role-reveal-overlay.hiding {
+    animation: role-overlay-out 0.3s ease forwards;
+    pointer-events: none;
+}
+
+.role-reveal-card {
+    text-align: center;
+    padding: clamp(40px, 6vw, 72px) clamp(48px, 8vw, 100px);
+    background: white;
+    border: 5px solid black;
+    box-shadow: 12px 12px 0px black;
+    max-width: min(560px, 90vw);
+    animation: role-card-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+.role-reveal-eyebrow {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 28px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    animation: role-fade-up 0.3s ease 0.4s both;
+}
+
+.role-reveal-role {
+    font-family: 'Cherry Bomb', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: clamp(48px, 9vw, 80px);
+    font-weight: bold;
+    line-height: 1.05;
+    text-transform: uppercase;
+    animation: role-stamp-in 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) 0.5s both;
+}
+
+.role-reveal-role.role-chef      { color: #2d7d2d; }
+.role-reveal-role.role-impasta   { color: #c92a2a; }
+.role-reveal-role.role-headchef  { color: #8b6914; }
+.role-reveal-role.role-hidden    { color: #6b1010; }
+
+.role-reveal-article {
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 800;
+    color: #111;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: role-fade-up 0.3s ease 0.45s both;
+    letter-spacing: 2px;
+}
+
+.role-reveal-divider {
+    width: 60px;
+    height: 4px;
+    background: black;
+    margin: 24px auto;
+    animation: role-fade-up 0.3s ease 0.75s both;
+}
+
+.role-reveal-hint {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.5;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    animation: role-fade-up 0.3s ease 0.85s both;
+    max-width: 340px;
+    margin: 0 auto;
+}
+
+.role-reveal-continue {
+    margin-top: 32px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #bbb;
+    text-transform: uppercase;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    animation: role-blink 1.2s ease-in-out 1.4s infinite both;
+}
+
+@keyframes role-overlay-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes role-overlay-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+@keyframes role-card-in {
+    from { transform: scale(0.85) translateY(24px); opacity: 0; }
+    to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+@keyframes role-stamp-in {
+    from { transform: scale(1.3); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes role-fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0);   }
+}
+
+@keyframes role-blink {
+    0%, 100% { opacity: 1;   }
+    50%       { opacity: 0.2; }
+}
+
+/* ── Reconnection banner ─────────────────────────────────────── */
+
 /* Reconnection banner */
 .reconnection-banner {
     position: fixed;
