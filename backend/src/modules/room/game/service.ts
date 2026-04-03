@@ -262,10 +262,11 @@ export class gameRoomService {
         if (currentProposal.votes.some(v => v.playerId === playerId)) {
             throw new Error('Already voted');
         }
-        
+
         currentProposal.votes.push({ playerId, inFavor });
-        
-        if (currentProposal.votes.length === room.players.length) {
+
+        const activePlayerCount = room.players.filter(p => !p.disconnected).length;
+        if (currentProposal.votes.length === activePlayerCount) {
             this.finalizeVote(room);
         }
         
@@ -278,6 +279,7 @@ export class gameRoomService {
         
         const votedPlayerIds = currentProposal.votes.map(v => v.playerId);
         const missingVoters = room.players
+            .filter(p => !p.disconnected)
             .map(p => p.playerId)
             .filter(id => !votedPlayerIds.includes(id));
         
@@ -332,8 +334,15 @@ export class gameRoomService {
         }
         
         room.ingredientSelections.push({ playerId, ingredient });
-        
-        if (room.ingredientSelections.length === currentProposal.proposal.length) {
+
+        const activeChefs = currentProposal.proposal.filter(chefId => {
+            const p = room.players.find(pl => pl.playerId === chefId);
+            return !p?.disconnected;
+        });
+        const allActiveSelected = activeChefs.every(chefId =>
+            room.ingredientSelections.some(s => s.playerId === chefId)
+        );
+        if (allActiveSelected) {
             this.finalizeCooking(room);
         }
         

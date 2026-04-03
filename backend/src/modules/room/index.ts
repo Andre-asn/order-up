@@ -249,6 +249,15 @@ export const roomModule = new Elysia({ prefix: '/room' })
                     ws.close();
                     return;
                 }
+
+                if (player.disconnected) {
+                    ws.send(JSON.stringify({
+                        type: 'error',
+                        message: 'You have been permanently disconnected from this game.',
+                    }));
+                    ws.close();
+                    return;
+                }
                 
                 if (!roomConnections.has(roomId)) {
                     roomConnections.set(roomId, new Map());
@@ -465,9 +474,10 @@ export const roomModule = new Elysia({ prefix: '/room' })
                     
                     case 'vote': {
                         const room = gameRoomService.vote(roomId, playerId, message.inFavor);
-                        
+
                         const currentProposal = room.roundProposal[room.round - 1];
-                        if (currentProposal && currentProposal.votes.length === room.players.length) {
+                        const activePlayerCount = room.players.filter((p: any) => !p.disconnected).length;
+                        if (currentProposal && currentProposal.votes.length === activePlayerCount) {
                             const yesCount = currentProposal.votes.filter(v => v.inFavor).length;
                             const noCount = currentProposal.votes.length - yesCount;
                             const passed = yesCount > noCount;
@@ -524,8 +534,14 @@ export const roomModule = new Elysia({ prefix: '/room' })
                         const roomBefore = gameRoomService.getGameRoom(roomId);
                         const completedRound = roomBefore.round;
                         const currentProposal = roomBefore.roundProposal[completedRound - 1];
-                        const wasLastSelection = currentProposal && 
-                            roomBefore.ingredientSelections.length === currentProposal.proposal.length - 1;
+                        const activeChefCount = currentProposal
+                            ? currentProposal.proposal.filter(chefId => {
+                                const p = roomBefore.players.find((pl: any) => pl.playerId === chefId);
+                                return !p?.disconnected;
+                            }).length
+                            : 0;
+                        const wasLastSelection = currentProposal &&
+                            roomBefore.ingredientSelections.length === activeChefCount - 1;
                         
                         const room = gameRoomService.selectIngredient(
                             roomId,
@@ -683,13 +699,9 @@ export const roomModule = new Elysia({ prefix: '/room' })
                     }
 
                     const room = gameRoomService.getGameRoom(roomId);
-                    const playerIndex = room.players.findIndex((p: any) => p.playerId === playerId);
-                    if (playerIndex !== -1) {
-                        room.players.splice(playerIndex, 1);
-                        broadcastToRoom(roomId, {
-                            type: 'player_left',
-                            playerId,
-                        });
+                    const player = room.players.find((p: any) => p.playerId === playerId);
+                    if (player) {
+                        player.disconnected = true;
                         broadcastToRoom(roomId, {
                             type: 'game_update',
                             game: getClientGameState(room),

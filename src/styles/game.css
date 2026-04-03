@@ -753,6 +753,21 @@
     opacity: 0.6;
 }
 
+.player-select-card.disconnected {
+    background: #fff3e0;
+    border-color: #aaa;
+}
+
+.avatar-disconnected {
+    filter: sepia(1) saturate(3) hue-rotate(320deg) brightness(0.85);
+    opacity: 0.75;
+}
+
+.name-disconnected {
+    text-decoration: line-through;
+    color: #999 !important;
+}
+
 .player-select-card.you {
     border-color: #2196f3;
 }

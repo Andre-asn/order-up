@@ -6,6 +6,7 @@ export namespace lobbyModel {
         playerId: t.String(),
         name: t.String({ minLength: 1, maxLength: 6 }),
         isHost: t.Boolean(),
+        disconnected: t.Optional(t.Boolean()),
     })
 
     export type player = typeof player.static;

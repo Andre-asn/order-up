@@ -18,6 +18,7 @@ type Player = {
     playerId: string
     name: string
     isHost: boolean
+    disconnected?: boolean
 }
 
 type GamePhase = 'proposing' | 'voting' | 'cooking' | 'redemption' | 'game_over'
@@ -620,15 +621,15 @@ function ProposingPhase({ game, isProponent, selectedChefs, onToggleChef, onProp
                     return (
                         <div
                             key={player.playerId}
-                            className={`player-select-card ${isSelected ? 'selected' : ''} ${!isProponent ? 'disabled' : ''} ${isYou ? 'you' : ''}`}
-                            onClick={() => isProponent && onToggleChef(player.playerId)}
+                            className={`player-select-card ${isSelected ? 'selected' : ''} ${!isProponent || player.disconnected ? 'disabled' : ''} ${isYou ? 'you' : ''} ${player.disconnected ? 'disconnected' : ''}`}
+                            onClick={() => isProponent && !player.disconnected && onToggleChef(player.playerId)}
                         >
-                            <img src={chefAvatars[index % 8]} alt={player.name} className="player-avatar" />
-                            <div 
-                                className={`player-name ${isKnownImpasta || isYouAndImpasta ? 'impasta-name' : ''}`}
+                            <img src={chefAvatars[index % 8]} alt={player.name} className={`player-avatar ${player.disconnected ? 'avatar-disconnected' : ''}`} />
+                            <div
+                                className={`player-name ${isKnownImpasta || isYouAndImpasta ? 'impasta-name' : ''} ${player.disconnected ? 'name-disconnected' : ''}`}
                                 style={{
-                                    fontSize: player.name.length > 4 
-                                        ? `${Math.max(16, 25 - (player.name.length - 4) * 1.2)}px` 
+                                    fontSize: player.name.length > 4
+                                        ? `${Math.max(16, 25 - (player.name.length - 4) * 1.2)}px`
                                         : undefined
                                 }}
                             >
@@ -780,7 +781,7 @@ function VotingPhase({ game, proposal, hasVoted, onVote, currentPlayerId, chefAv
             )}
 
             <div className="vote-count">
-                {proposal.votes.length}/{game.players.length} voted
+                {proposal.votes.length}/{game.players.filter((p: Player) => !p.disconnected).length} voted
             </div>
         </div>
     )
