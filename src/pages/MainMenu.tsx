@@ -1,6 +1,7 @@
 import '../styles/main-menu.css'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { SESSION_KEY } from './RoomWrapper'
 import { useMusic } from '../components/MusicContext'
 import soupGif from '../assets/soup.gif'
 import kitchenBg from '../assets/kitchen-background.gif'
@@ -78,6 +79,14 @@ export default function MainMenu() {
     const [joinRoom, setJoinRoom] = useState('')
     const [isCreating, setIsCreating] = useState(false)
     const [isJoining, setIsJoining] = useState(false)
+    const [savedSession, setSavedSession] = useState<{ roomId: string, playerId: string, screen: string } | null>(() => {
+        try {
+            const raw = localStorage.getItem(SESSION_KEY)
+            return raw ? JSON.parse(raw) : null
+        } catch {
+            return null
+        }
+    })
 
     const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3000'
 
@@ -286,6 +295,34 @@ export default function MainMenu() {
               <button className="menu-btn btn-light" onClick={() => setShowJoin(false)} disabled={isJoining}>Cancel</button>
               <button className="menu-btn btn-dark" onClick={submitJoin} disabled={isJoining}>
                 {isJoining ? 'Joining...' : 'Join'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {savedSession && (
+        <div className="modal-backdrop" onClick={() => setSavedSession(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Rejoin Game?</h2>
+            <p style={{ marginBottom: '16px', fontSize: '16px' }}>
+              You have an active game in room <strong>{savedSession.roomId}</strong>.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="menu-btn btn-light"
+                onClick={() => { localStorage.removeItem(SESSION_KEY); setSavedSession(null) }}
+              >
+                Dismiss
+              </button>
+              <button
+                className="menu-btn btn-dark"
+                onClick={() => navigate(
+                  savedSession.screen === 'game'
+                    ? `/room/${savedSession.roomId}/game?playerId=${savedSession.playerId}`
+                    : `/room/${savedSession.roomId}?playerId=${savedSession.playerId}`
+                )}
+              >
+                Rejoin
               </button>
             </div>
           </div>

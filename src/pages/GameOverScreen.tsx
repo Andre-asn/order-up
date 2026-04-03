@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { SESSION_KEY } from './RoomWrapper'
 import '../styles/game.css'
 import a1 from '../assets/Untitled-1.gif'
 import a2 from '../assets/Untitled-2.gif'
@@ -34,6 +35,10 @@ export default function GameOverScreen() {
     const [timeRemaining, setTimeRemaining] = useState(30)
     const chefAvatars = [a1, a2, a3, a4, a5, a6, a7, a8]
     const gameOverData = location.state as GameOverData | null
+
+    useEffect(() => {
+        localStorage.removeItem(SESSION_KEY)
+    }, [])
 
     useEffect(() => {
         if (!gameOverData) {
