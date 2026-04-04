@@ -789,16 +789,7 @@ function VotingPhase({ game, proposal, hasVoted, onVote, currentPlayerId, chefAv
                             if (!vote) {
                                 return (
                                     <div key={player.playerId} className="vote-item pending">
-                                        <span 
-                                            className="vote-player"
-                                            style={{
-                                                fontSize: player.name.length > 8 
-                                                    ? `${Math.max(12, 16 - (player.name.length - 8) * 0.5)}px` 
-                                                    : undefined
-                                            }}
-                                        >
-                                            {player.name}
-                                        </span>
+                                        <span className="vote-player">{player.name}</span>
                                         <span className="vote-choice">-</span>
                                     </div>
                                 )
@@ -806,16 +797,7 @@ function VotingPhase({ game, proposal, hasVoted, onVote, currentPlayerId, chefAv
 
                             return (
                                 <div key={player.playerId} className={`vote-item ${vote.inFavor ? 'approve' : 'reject'}`}>
-                                    <span 
-                                        className="vote-player"
-                                        style={{
-                                            fontSize: player.name.length > 4 
-                                                ? `${Math.max(12, 16 - (player.name.length - 4) * 0.5)}px` 
-                                                : undefined
-                                        }}
-                                    >
-                                        {player.name}
-                                    </span>
+                                    <span className="vote-player">{player.name}</span>
                                     <span className="vote-choice">{vote.inFavor ? '✓' : '✗'}</span>
                                 </div>
                             )
